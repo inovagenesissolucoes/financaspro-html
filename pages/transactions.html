@@ -8,16 +8,16 @@
 </head>
 <body>
 <div class="page">
-
   <div class="page-hero">
     <div class="page-hero-row">
-      <div>
-        <h1 class="page-hero-title">Lançamentos</h1>
-        <p class="page-hero-sub" id="month-label"></p>
-      </div>
       <div style="display:flex;align-items:center;gap:10px;">
-        <button onclick="changeMonth(-1)" style="background:rgba(255,255,255,0.15);border:none;color:#fff;width:30px;height:30px;border-radius:9px;font-size:16px;cursor:pointer;">‹</button>
-        <button onclick="changeMonth(1)"  style="background:rgba(255,255,255,0.15);border:none;color:#fff;width:30px;height:30px;border-radius:9px;font-size:16px;cursor:pointer;">›</button>
+        <a href="dashboard.html" class="back-btn">&#8249;</a>
+        <div><h1 class="page-hero-title">Lançamentos</h1><p class="page-hero-sub" id="month-label"></p></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button onclick="changeMonth(-1)" style="background:rgba(255,255,255,0.15);border:none;color:#fff;width:30px;height:30px;border-radius:9px;font-size:16px;cursor:pointer;">&#8249;</button>
+        <button onclick="changeMonth(1)" style="background:rgba(255,255,255,0.15);border:none;color:#fff;width:30px;height:30px;border-radius:9px;font-size:16px;cursor:pointer;">&#8250;</button>
+        <button class="menu-btn" onclick="openDrawer()"><i class="ti ti-menu-2"></i></button>
       </div>
     </div>
     <div class="page-hero-pills">
@@ -34,28 +34,20 @@
   </div>
 
   <div id="list-container"><div style="padding:0 14px;"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div></div>
-
 </div>
 
-<!-- Bottom nav -->
-<div class="bnav-wrap">
-  <div class="bnav">
-    <a href="dashboard.html" class="ntab"><i class="ti ti-home"></i><span>Início</span></a>
-    <a href="transactions.html" class="ntab on"><i class="ti ti-list"></i><span>Lançamentos</span><span class="ndot"></span></a>
-    <div class="ncenter"><button class="fab-nav" onclick="openModal()"><i class="ti ti-plus"></i></button></div>
-    <a href="cards.html" class="ntab"><i class="ti ti-credit-card"></i><span>Cartões</span></a>
-    <a href="more.html" class="ntab"><i class="ti ti-dots"></i><span>Mais</span></a>
-  </div>
-</div>
+<div class="bnav-wrap"><div class="bnav">
+  <a href="dashboard.html" class="ntab"><i class="ti ti-home"></i><span>Início</span></a>
+  <a href="transactions.html" class="ntab on"><i class="ti ti-list"></i><span>Lançamentos</span><span class="ndot"></span></a>
+  <div class="ncenter"><button class="fab-nav" onclick="openModal()"><i class="ti ti-plus"></i></button></div>
+  <a href="cards.html" class="ntab"><i class="ti ti-credit-card"></i><span>Cartões</span></a>
+  <a href="more.html" class="ntab"><i class="ti ti-dots"></i><span>Mais</span></a>
+</div></div>
 
-<!-- Modal -->
 <div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)closeModal()">
   <div class="modal">
     <div class="modal-handle"></div>
-    <div class="modal-header">
-      <span class="modal-title">Novo Lançamento</span>
-      <button class="modal-close" onclick="closeModal()">✕</button>
-    </div>
+    <div class="modal-header"><span class="modal-title">Novo Lançamento</span><button class="modal-close" onclick="closeModal()">&#10005;</button></div>
     <div class="type-toggle">
       <button class="type-btn expense active" id="btn-expense" onclick="setType('expense')">📤 Despesa</button>
       <button class="type-btn income" id="btn-income" onclick="setType('income')">📥 Receita</button>
@@ -70,50 +62,36 @@
   </div>
 </div>
 
-<script src="../js/config.js"></script>
-<script src="../js/api.js"></script>
-<script src="../js/utils.js"></script>
+<script src="../js/config.js"></script><script src="../js/api.js"></script><script src="../js/utils.js"></script><script src="../js/nav.js"></script>
 <script>
   if (!Auth.requireAuth()) throw '';
   applyTheme();
+  injectNav('transactions.html');
 
-  let month = Utils.getActiveMonth();
-  let activeTab = 'all';
-  let allTx = [], categories = [], accounts = [];
-  let txType = 'expense';
+  let month = Utils.getActiveMonth(), activeTab = 'all', allTx = [], categories = [], accounts = [], txType = 'expense';
 
   function changeMonth(d) { month = Utils.addMonths(month, d); Utils.setActiveMonth(month); load(); }
-  function setTab(tab, el) {
-    activeTab = tab;
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('tab-all','tab-income','tab-expense'));
-    el.classList.add(tab === 'all' ? 'tab-all' : tab === 'income' ? 'tab-income' : 'tab-expense');
-    renderList();
-  }
+  function setTab(tab, el) { activeTab = tab; document.querySelectorAll('.tab').forEach(t => t.className = 'tab ' + (t===el ? (tab==='all'?'tab-all':tab==='income'?'tab-income':'tab-expense') : 'tab-'+(['all','income','expense'].find(x=>t.textContent.toLowerCase().includes(x==='all'?'todos':x==='income'?'receita':'despesa'))))); renderList(); }
 
   async function load() {
     document.getElementById('month-label').textContent = Utils.formatMonth(month);
-    document.getElementById('list-container').innerHTML = '<div style="padding:0 14px;"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>';
+    document.getElementById('list-container').innerHTML = '<div style="padding:0 14px;"><div class="skeleton"></div><div class="skeleton"></div></div>';
     const [txRes, catRes, accRes] = await Promise.all([API.listTransactions({month}), API.listCategories(), API.listAccounts()]);
     allTx = txRes.success ? txRes.data : [];
     categories = catRes.success ? catRes.data : [];
     accounts = accRes.success ? accRes.data : [];
     fillSelects();
-    // Update hero pills
     const income = allTx.filter(t=>t.type==='income'&&t.status!=='cancelled');
     const expense = allTx.filter(t=>t.type==='expense'&&t.status!=='cancelled');
-    const totalIncome = income.reduce((s,t)=>s+Number(t.expected_amount||0),0);
-    const totalExpense = expense.reduce((s,t)=>s+Number(t.expected_amount||0),0);
-    document.getElementById('ph-income').textContent = Utils.formatCurrency(totalIncome);
-    document.getElementById('ph-expense').textContent = Utils.formatCurrency(totalExpense);
-    document.getElementById('ph-net').textContent = Utils.formatCurrency(totalIncome - totalExpense);
+    document.getElementById('ph-income').textContent = Utils.formatCurrency(income.reduce((s,t)=>s+Number(t.expected_amount||0),0));
+    document.getElementById('ph-expense').textContent = Utils.formatCurrency(expense.reduce((s,t)=>s+Number(t.expected_amount||0),0));
+    document.getElementById('ph-net').textContent = Utils.formatCurrency(income.reduce((s,t)=>s+Number(t.expected_amount||0),0) - expense.reduce((s,t)=>s+Number(t.expected_amount||0),0));
     renderList();
   }
 
   function fillSelects() {
-    const cs = document.getElementById('tx-category');
-    const as = document.getElementById('tx-account');
-    cs.innerHTML = '<option value="">Sem categoria</option>' + categories.filter(c=>c.type===txType).map(c=>`<option value="${c.category_id}">${c.icon||''} ${c.name}${c.subcategory?' — '+c.subcategory:''}</option>`).join('');
-    as.innerHTML = '<option value="">Sem conta</option>' + accounts.map(a=>`<option value="${a.account_id}">${a.name}</option>`).join('');
+    document.getElementById('tx-category').innerHTML = '<option value="">Sem categoria</option>' + categories.filter(c=>c.type===txType).map(c=>`<option value="${c.category_id}">${c.icon||''} ${c.name}${c.subcategory?' — '+c.subcategory:''}</option>`).join('');
+    document.getElementById('tx-account').innerHTML = '<option value="">Sem conta</option>' + accounts.map(a=>`<option value="${a.account_id}">${a.name}</option>`).join('');
   }
 
   function renderList() {
@@ -123,85 +101,46 @@
       if (activeTab === 'expense') return t.type === 'expense';
       return true;
     });
-
-    if (filtered.length === 0) {
-      document.getElementById('list-container').innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><p class="empty-text">Nenhum lançamento em<br>${Utils.formatMonth(month)}</p><button class="btn btn-primary" style="max-width:200px;margin:0 auto;" onclick="openModal()">Adicionar lançamento</button></div>`;
-      return;
-    }
-
-    // Group by status category
-    const paid = filtered.filter(t => t.status === 'paid');
-    const overdue = filtered.filter(t => t.status !== 'paid' && Utils.isOverdue(t.due_date, t.status));
-    const pending = filtered.filter(t => t.status !== 'paid' && !Utils.isOverdue(t.due_date, t.status));
-
+    if (filtered.length === 0) { document.getElementById('list-container').innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><p class="empty-text">Nenhum lançamento em<br>${Utils.formatMonth(month)}</p><button class="btn btn-primary" style="max-width:200px;margin:0 auto;" onclick="openModal()">Adicionar</button></div>`; return; }
+    const paid = filtered.filter(t=>t.status==='paid'), overdue = filtered.filter(t=>t.status!=='paid'&&Utils.isOverdue(t.due_date,t.status)), pending = filtered.filter(t=>t.status!=='paid'&&!Utils.isOverdue(t.due_date,t.status));
     let html = '';
-    if (overdue.length > 0) { html += `<div class="date-label">⚠ Vencidas</div><div class="tx-list">${overdue.map(renderCard).join('')}</div>`; }
-    if (pending.length > 0) { html += `<div class="date-label">Pendentes</div><div class="tx-list">${pending.map(renderCard).join('')}</div>`; }
-    if (paid.length > 0)    { html += `<div class="date-label">✓ Pagas / Recebidas</div><div class="tx-list">${paid.map(renderCard).join('')}</div>`; }
-
+    if (overdue.length>0) html += `<div class="date-label">⚠ Vencidas</div><div class="tx-list">${overdue.map(renderCard).join('')}</div>`;
+    if (pending.length>0) html += `<div class="date-label">Pendentes</div><div class="tx-list">${pending.map(renderCard).join('')}</div>`;
+    if (paid.length>0) html += `<div class="date-label">✓ Concluídas</div><div class="tx-list">${paid.map(renderCard).join('')}</div>`;
     document.getElementById('list-container').innerHTML = html;
   }
 
   function renderCard(tx) {
     const overdue = Utils.isOverdue(tx.due_date, tx.status);
-    const cat = categories.find(c => c.category_id === tx.category_id);
-    const acc = accounts.find(a => a.account_id === tx.account_id);
-    const icon = cat?.icon || (tx.type === 'income' ? '💼' : '💳');
-    const catName = cat ? cat.name : (tx.type === 'income' ? 'Receita' : 'Despesa');
-    const accName = acc ? ` • ${acc.name}` : '';
-    const badge = tx.status === 'paid'
-      ? `<span class="badge b-paid">${tx.type==='income'?'✓ Recebido':'✓ Pago'}</span>`
-      : overdue ? `<span class="badge b-over">⚠ Vencida</span>`
-      : `<span class="badge b-pend">Vence ${Utils.formatDate(tx.due_date)}</span>`;
-    const payBtn = tx.status === 'pending' ? `<button class="pay-btn" onclick="markPaid('${tx.transaction_id}','${tx.account_id||''}',${tx.expected_amount})">${tx.type==='income'?'Confirmar':'Pagar'}</button>` : '';
-    const amt = tx.status === 'paid' ? Number(tx.actual_amount||tx.expected_amount) : Number(tx.expected_amount);
-    return `
-      <div class="tx-card ${overdue && tx.status!=='paid' ? 'overdue' : ''}">
-        <div class="tx-ico" style="background:${(cat?.color||'#6366F1')}22;">${icon}</div>
-        <div class="tx-body">
-          <div class="tx-name">${tx.description}</div>
-          <div class="tx-cat">${catName}${accName}</div>
-          ${badge}
-        </div>
-        <div class="tx-right">
-          <div class="tx-amt ${tx.type==='income'?'tx-pos':'tx-neg'}">${tx.type==='income'?'+':'-'}${Utils.formatCurrency(amt)}</div>
-          ${payBtn}
-        </div>
-      </div>`;
+    const cat = categories.find(c=>c.category_id===tx.category_id);
+    const acc = accounts.find(a=>a.account_id===tx.account_id);
+    const icon = cat?.icon||(tx.type==='income'?'💼':'💳');
+    const badge = tx.status==='paid' ? `<span class="badge b-paid">${tx.type==='income'?'✓ Recebido':'✓ Pago'}</span>` : overdue ? '<span class="badge b-over">⚠ Vencida</span>' : `<span class="badge b-pend">Vence ${Utils.formatDate(tx.due_date)}</span>`;
+    const payBtn = tx.status==='pending' ? `<button class="pay-btn" onclick="markPaid('${tx.transaction_id}','${tx.account_id||''}',${ tx.expected_amount})">${tx.type==='income'?'Confirmar':'Pagar'}</button>` : '';
+    const amt = tx.status==='paid' ? Number(tx.actual_amount||tx.expected_amount) : Number(tx.expected_amount);
+    return `<div class="tx-card ${overdue&&tx.status!=='paid'?'overdue':''}" ><div class="tx-ico" style="background:${(cat?.color||'#6366F1')}22;">${icon}</div><div class="tx-body"><div class="tx-name">${tx.description}</div><div class="tx-cat">${cat?.name||''} ${acc?'· '+acc.name:''}</div>${badge}</div><div class="tx-right"><div class="tx-amt ${tx.type==='income'?'tx-pos':'tx-neg'}">${tx.type==='income'?'+':'-'}${Utils.formatCurrency(amt)}</div>${payBtn}</div></div>`;
   }
 
   async function markPaid(id, accountId, amount) {
-    const res = await API.markPaid({ transaction_id:id, account_id:accountId, paid_date:new Date().toISOString().split('T')[0], actual_amount:amount });
-    if (res.success) { Utils.toast('✅ Marcado como pago!'); load(); }
+    const res = await API.markPaid({transaction_id:id,account_id:accountId,paid_date:new Date().toISOString().split('T')[0],actual_amount:amount});
+    if (res.success) { Utils.toast('✅ Marcado como pago!'); load(); } else Utils.toast(res.error||'Erro','error');
+  }
+
+  function openModal() { document.getElementById('tx-date').value=new Date().toISOString().split('T')[0]; document.getElementById('modal-overlay').classList.add('open'); }
+  function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
+  function setType(type) { txType=type; document.getElementById('btn-expense').classList.toggle('active',type==='expense'); document.getElementById('btn-income').classList.toggle('active',type==='income'); fillSelects(); }
+
+  async function saveTransaction() {
+    const desc=document.getElementById('tx-desc').value.trim(), amount=parseFloat(document.getElementById('tx-amount').value), date=document.getElementById('tx-date').value;
+    if (!desc||!amount||!date) { Utils.toast('Preencha descrição, valor e data','error'); return; }
+    const btn=document.getElementById('save-btn'); btn.disabled=true; btn.textContent='Salvando...';
+    const res=await API.createTransaction({type:txType,description:desc,expected_amount:amount,due_date:date,category_id:document.getElementById('tx-category').value,account_id:document.getElementById('tx-account').value,notes:document.getElementById('tx-notes').value});
+    btn.disabled=false; btn.textContent='Salvar Lançamento';
+    if (res.success) { Utils.toast('✅ Lançamento salvo!'); closeModal(); ['tx-desc','tx-amount','tx-notes'].forEach(id=>document.getElementById(id).value=''); load(); }
     else Utils.toast(res.error||'Erro','error');
   }
 
-  function openModal() {
-    document.getElementById('tx-date').value = new Date().toISOString().split('T')[0];
-    document.getElementById('modal-overlay').classList.add('open');
-  }
-  function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
-  function setType(type) {
-    txType = type;
-    document.getElementById('btn-expense').classList.toggle('active', type==='expense');
-    document.getElementById('btn-income').classList.toggle('active', type==='income');
-    fillSelects();
-  }
-
-  async function saveTransaction() {
-    const desc = document.getElementById('tx-desc').value.trim();
-    const amount = parseFloat(document.getElementById('tx-amount').value);
-    const date = document.getElementById('tx-date').value;
-    if (!desc || !amount || !date) { Utils.toast('Preencha descrição, valor e data','error'); return; }
-    const btn = document.getElementById('save-btn');
-    btn.disabled = true; btn.textContent = 'Salvando...';
-    const res = await API.createTransaction({ type:txType, description:desc, expected_amount:amount, due_date:date, category_id:document.getElementById('tx-category').value, account_id:document.getElementById('tx-account').value, notes:document.getElementById('tx-notes').value });
-    btn.disabled = false; btn.textContent = 'Salvar Lançamento';
-    if (res.success) { Utils.toast('✅ Lançamento salvo!'); closeModal(); ['tx-desc','tx-amount','tx-notes'].forEach(id=>document.getElementById(id).value=''); load(); }
-    else Utils.toast(res.error||'Erro ao salvar','error');
-  }
-
-  if (window.location.hash === '#new') openModal();
+  if (window.location.hash==='#new') setTimeout(openModal, 300);
   load();
 </script>
 </body>
