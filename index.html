@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>FinançasPRO — Login</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="css/style.css">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#0F172A">
 </head>
@@ -36,11 +36,11 @@
     </div>
   </div>
 
-  <script src="config.js"></script>
-  <script src="api.js"></script>
-  <script src="utils.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/utils.js"></script>
   <script>
-    if (Auth.isLoggedIn()) window.location.href = 'dashboard.html';
+    if (Auth.isLoggedIn()) window.location.href = 'pages/dashboard.html';
 
     document.getElementById('toggle-pass').addEventListener('click', () => {
       const inp = document.getElementById('password');
@@ -63,7 +63,7 @@
         const user = result.user || result.data?.user;
         Auth.setSession(user, token);
         Utils.toast(`Bem-vindo, ${user?.name || ''}! 👋`);
-        setTimeout(() => window.location.href = 'dashboard.html', 500);
+        setTimeout(() => window.location.href = 'pages/dashboard.html', 500);
       } else {
         Utils.toast(result.error || 'Erro ao entrar', 'error');
         btn.disabled = false;
