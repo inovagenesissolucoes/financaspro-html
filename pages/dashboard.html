@@ -112,7 +112,7 @@
       API.getDashboard(currentMonth),
       API.getCategoryBreakdown(currentMonth)
     ]);
-
+    console.log('Dashboard:', JSON.stringify(sumRes.data));
     if (!sumRes.success) return;
     const s = sumRes.data;
 
