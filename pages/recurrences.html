@@ -140,7 +140,7 @@
     recType = type;
     document.getElementById('rec-type').value = type;
     document.getElementById('modal-title').textContent = type === 'expense' ? 'Nova Despesa Fixa' : 'Nova Receita Recorrente';
-    document.getElementById('rec-category').innerHTML = '<option value="">Sem categoria</option>' + categories.filter(c=>c.type===type).map(c=>`<option value="${c.category_id}">${c.icon||''} ${c.name}</option>`).join('');
+    document.getElementById('rec-category').innerHTML = '<option value="">Sem categoria</option>' + categories.filter(c=>c.type===type).map(c=>`<option value="${c.category_id}">${c.icon||''} ${c.name}${c.subcategory ? ' · ' + c.subcategory : ''}</option>`).join('');
     document.getElementById('rec-account').innerHTML = '<option value="">Sem conta</option>' + accounts.map(a=>`<option value="${a.account_id}">${a.name}</option>`).join('');
     document.getElementById('modal-overlay').classList.add('open');
   }
