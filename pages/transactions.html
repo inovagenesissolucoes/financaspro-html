@@ -9,7 +9,6 @@
 </head>
 <body>
 <div class="page">
-
   <div class="page-hero">
     <div class="page-hero-row">
       <div style="display:flex;align-items:center;gap:12px;">
@@ -20,14 +19,8 @@
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:6px;">
-        <button onclick="changeMonth(-1)" style="background:rgba(255,255,255,0.15);border:none;color:#fff;width:30px;height:30px;border-radius:9px;font-size:16px;cursor:pointer;">&#8249;</button>
-        <button onclick="changeMonth(1)" style="background:rgba(255,255,255,0.15);border:none;color:#fff;width:30px;height:30px;border-radius:9px;font-size:16px;cursor:pointer;">&#8250;</button>
-      </div>
-    </div>
-      <div style="display:flex;align-items:center;gap:8px;">
         <button onclick="changeMonth(-1)" style="background:rgba(255,255,255,0.15);border:none;color:#fff;width:30px;height:30px;border-radius:9px;font-size:16px;cursor:pointer;">‹</button>
         <button onclick="changeMonth(1)" style="background:rgba(255,255,255,0.15);border:none;color:#fff;width:30px;height:30px;border-radius:9px;font-size:16px;cursor:pointer;">›</button>
-        <button class="menu-btn" onclick="openDrawer()"><i class="ti ti-menu-2"></i></button>
       </div>
     </div>
     <div class="page-hero-pills">
@@ -48,7 +41,6 @@
   <div id="list-container">
     <div style="padding:0 14px;"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
   </div>
-
 </div>
 
 <div class="bnav-wrap">
@@ -67,24 +59,12 @@
     <div class="modal-handle"></div>
     <div class="modal-header"><span class="modal-title">O que deseja lançar?</span><button class="modal-close" onclick="closeTypeSelector()">✕</button></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-      <button onclick="openModal('expense')" style="padding:18px 12px;border-radius:var(--radius);border:1.5px solid var(--red-bg);background:var(--red-bg);cursor:pointer;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:8px;">
-        <span style="font-size:28px;">📤</span><span style="font-size:12px;font-weight:700;color:var(--red);">Despesa</span><span style="font-size:10px;color:var(--text-3);">Gasto avulso</span>
-      </button>
-      <button onclick="openModal('income')" style="padding:18px 12px;border-radius:var(--radius);border:1.5px solid var(--green-bg);background:var(--green-bg);cursor:pointer;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:8px;">
-        <span style="font-size:28px;">📥</span><span style="font-size:12px;font-weight:700;color:var(--green);">Receita</span><span style="font-size:10px;color:var(--text-3);">Entrada avulsa</span>
-      </button>
-      <button onclick="openCardModal()" style="padding:18px 12px;border-radius:var(--radius);border:1.5px solid var(--accent-light);background:var(--accent-light);cursor:pointer;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:8px;">
-        <span style="font-size:28px;">💳</span><span style="font-size:12px;font-weight:700;color:var(--accent-2);">Cartão</span><span style="font-size:10px;color:var(--text-3);">Compra no crédito</span>
-      </button>
-      <button onclick="openTransferModal()" style="padding:18px 12px;border-radius:var(--radius);border:1.5px solid #FEF3C7;background:#FEF3C7;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:8px;">
-        <span style="font-size:28px;">🔃</span><span style="font-size:12px;font-weight:700;color:#D97706;">Transferência</span><span style="font-size:10px;color:var(--text-3);">Entre contas</span>
-      </button>
-      <button onclick="openRecurrenceModal()" style="padding:18px 12px;border-radius:var(--radius);border:1.5px solid #E0E7FF;background:#E0E7FF;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:8px;">
-        <span style="font-size:28px;">🔄</span><span style="font-size:12px;font-weight:700;color:#4338CA;">Recorrência</span><span style="font-size:10px;color:var(--text-3);">Fixa mensal</span>
-      </button>
-      <button onclick="openDebtModal()" style="padding:18px 12px;border-radius:var(--radius);border:1.5px solid #FFE4E6;background:#FFE4E6;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:8px;">
-        <span style="font-size:28px;">📌</span><span style="font-size:12px;font-weight:700;color:#BE123C;">Parcelamento</span><span style="font-size:10px;color:var(--text-3);">Dívida em parcelas</span>
-      </button>
+      <button onclick="openModal('expense')" style="padding:18px 12px;border-radius:var(--radius);border:1.5px solid var(--red-bg);background:var(--red-bg);cursor:pointer;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:8px;"><span style="font-size:28px;">📤</span><span style="font-size:12px;font-weight:700;color:var(--red);">Despesa</span><span style="font-size:10px;color:var(--text-3);">Gasto avulso</span></button>
+      <button onclick="openModal('income')" style="padding:18px 12px;border-radius:var(--radius);border:1.5px solid var(--green-bg);background:var(--green-bg);cursor:pointer;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:8px;"><span style="font-size:28px;">📥</span><span style="font-size:12px;font-weight:700;color:var(--green);">Receita</span><span style="font-size:10px;color:var(--text-3);">Entrada avulsa</span></button>
+      <button onclick="openCardModal()" style="padding:18px 12px;border-radius:var(--radius);border:1.5px solid var(--accent-light);background:var(--accent-light);cursor:pointer;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:8px;"><span style="font-size:28px;">💳</span><span style="font-size:12px;font-weight:700;color:var(--accent-2);">Cartão</span><span style="font-size:10px;color:var(--text-3);">Compra no crédito</span></button>
+      <button onclick="openTransferModal()" style="padding:18px 12px;border-radius:var(--radius);border:1.5px solid #FEF3C7;background:#FEF3C7;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:8px;"><span style="font-size:28px;">🔃</span><span style="font-size:12px;font-weight:700;color:#D97706;">Transferência</span><span style="font-size:10px;color:var(--text-3);">Entre contas</span></button>
+      <button onclick="openRecurrenceModal()" style="padding:18px 12px;border-radius:var(--radius);border:1.5px solid #E0E7FF;background:#E0E7FF;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:8px;"><span style="font-size:28px;">🔄</span><span style="font-size:12px;font-weight:700;color:#4338CA;">Recorrência</span><span style="font-size:10px;color:var(--text-3);">Fixa mensal</span></button>
+      <button onclick="openDebtModal()" style="padding:18px 12px;border-radius:var(--radius);border:1.5px solid #FFE4E6;background:#FFE4E6;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:8px;"><span style="font-size:28px;">📌</span><span style="font-size:12px;font-weight:700;color:#BE123C;">Parcelamento</span><span style="font-size:10px;color:var(--text-3);">Dívida em parcelas</span></button>
     </div>
   </div>
 </div>
@@ -113,23 +93,13 @@
     <input type="hidden" id="pay-account-id">
     <input type="hidden" id="pay-expected">
     <input type="hidden" id="pay-type">
-
     <div style="background:var(--bg-input);border-radius:var(--radius-sm);padding:12px;margin-bottom:16px;">
       <p style="font-size:11px;color:var(--text-3);margin-bottom:4px;">Valor previsto</p>
       <p style="font-size:18px;font-weight:700;color:var(--text);" id="pay-expected-display">R$ 0,00</p>
       <p style="font-size:11px;color:var(--text-3);margin-top:6px;" id="pay-tx-name"></p>
     </div>
-
-    <div class="field">
-      <label class="field-label">Data real do pagamento *</label>
-      <input type="date" id="pay-date">
-    </div>
-    <div class="field">
-      <label class="field-label">Valor real pago (R$) *</label>
-      <input type="number" id="pay-amount" placeholder="0,00" step="0.01" min="0" oninput="calcPayDiff()">
-    </div>
-
-    <!-- Diferença -->
+    <div class="field"><label class="field-label">Data real do pagamento *</label><input type="date" id="pay-date"></div>
+    <div class="field"><label class="field-label">Valor real pago (R$) *</label><input type="number" id="pay-amount" placeholder="0,00" step="0.01" min="0" oninput="calcPayDiff()"></div>
     <div id="pay-diff-box" style="display:none;border-radius:var(--radius-sm);padding:12px;margin-bottom:16px;">
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <span style="font-size:12px;font-weight:700;" id="pay-diff-label"></span>
@@ -137,7 +107,6 @@
       </div>
       <p style="font-size:10px;margin-top:4px;" id="pay-diff-desc"></p>
     </div>
-
     <button class="btn btn-primary" id="pay-save-btn" onclick="confirmPayment()">✅ Confirmar Pagamento</button>
   </div>
 </div>
@@ -194,46 +163,24 @@
     <div class="modal-handle"></div>
     <div class="modal-header"><span class="modal-title">Novo Parcelamento</span><button class="modal-close" onclick="closeDebtModal()">✕</button></div>
     <div class="field"><label class="field-label">Descrição *</label><input type="text" id="d-desc" placeholder="Ex: Notebook, Geladeira..."></div>
-    <div class="field"><label class="field-label">Valor original do produto (R$)</label><input type="number" id="d-original" placeholder="Quanto custava sem parcelar" step="0.01" oninput="calcDebtPreview()"></div>
+    <div class="field"><label class="field-label">Valor original (R$)</label><input type="number" id="d-original" placeholder="Quanto custava sem parcelar" step="0.01" oninput="calcDebtPreview()"></div>
     <div class="grid-2">
-      <div class="field"><label class="field-label">Nº de parcelas *</label><input type="number" id="d-total" placeholder="12" min="1" oninput="calcDebtPreview()"></div>
-      <div class="field"><label class="field-label">Valor por parcela *</label><input type="number" id="d-install" placeholder="0,00" step="0.01" oninput="calcDebtPreview()"></div>
+      <div class="field"><label class="field-label">Nº parcelas *</label><input type="number" id="d-total" placeholder="12" min="1" oninput="calcDebtPreview()"></div>
+      <div class="field"><label class="field-label">Valor parcela *</label><input type="number" id="d-install" placeholder="0,00" step="0.01" oninput="calcDebtPreview()"></div>
     </div>
-    <div class="field">
-      <label class="field-label">Data da 1ª parcela *</label>
-      <input type="date" id="d-date" onchange="checkRetroactive()">
-    </div>
-
-    <!-- Campo retroativo — só aparece se data for anterior ao mês atual -->
+    <div class="field"><label class="field-label">Data da 1ª parcela *</label><input type="date" id="d-date" onchange="checkRetroactive()"></div>
     <div id="retroactive-section" style="display:none;background:var(--yellow-bg);border-radius:var(--radius-sm);padding:14px;margin-bottom:14px;border:0.5px solid #FCD34D;">
-      <p style="font-size:12px;font-weight:700;color:#92400E;margin-bottom:4px;">📅 Parcelamento retroativo detectado</p>
-      <p style="font-size:10px;color:#B45309;margin-bottom:12px;">As parcelas do passado serão marcadas como pagas (apenas histórico, sem afetar saldo). Informe a última que você pagou:</p>
-      <div class="field" style="margin-bottom:0;">
-        <label class="field-label">Última parcela paga (mês/ano)</label>
-        <input type="month" id="d-last-paid" placeholder="Ex: 2025-08">
-        <p style="font-size:10px;color:#B45309;margin-top:4px;">Deixe em branco se nenhuma foi paga ainda</p>
-      </div>
+      <p style="font-size:12px;font-weight:700;color:#92400E;margin-bottom:4px;">📅 Parcelamento retroativo</p>
+      <p style="font-size:10px;color:#B45309;margin-bottom:10px;">Parcelas passadas serão marcadas como histórico (sem afetar saldo). Informe a última paga:</p>
+      <div class="field" style="margin-bottom:0;"><label class="field-label">Última parcela paga (mês/ano)</label><input type="month" id="d-last-paid"><p style="font-size:10px;color:#B45309;margin-top:4px;">Deixe em branco para marcar todas as passadas como histórico</p></div>
     </div>
-
     <div class="field"><label class="field-label">Conta / Cartão</label><select id="d-account"><option value="">Sem conta</option></select></div>
     <div class="field"><label class="field-label">Categoria</label><select id="d-category"><option value="">Sem categoria</option></select></div>
-
-    <!-- Preview juros -->
     <div id="debt-preview" style="display:none;background:var(--bg-input);border-radius:var(--radius-sm);padding:14px;margin-bottom:14px;">
-      <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
-        <span style="font-size:11px;color:var(--text-3);">Total a pagar:</span>
-        <span style="font-size:12px;font-weight:700;" id="prev-total"></span>
-      </div>
-      <div style="display:flex;justify-content:space-between;margin-bottom:6px;" id="prev-interest-row">
-        <span style="font-size:11px;color:var(--text-3);">Valor original:</span>
-        <span style="font-size:12px;font-weight:700;" id="prev-original"></span>
-      </div>
-      <div style="display:flex;justify-content:space-between;padding-top:8px;border-top:0.5px solid var(--border);">
-        <span style="font-size:11px;font-weight:700;color:var(--yellow);">💸 Juros que vai pagar:</span>
-        <span style="font-size:13px;font-weight:700;color:var(--yellow);" id="prev-juros"></span>
-      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span style="font-size:11px;color:var(--text-3);">Total a pagar:</span><span style="font-size:12px;font-weight:700;" id="prev-total"></span></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px;" id="prev-interest-row"><span style="font-size:11px;color:var(--text-3);">Valor original:</span><span style="font-size:12px;font-weight:700;" id="prev-original"></span></div>
+      <div style="display:flex;justify-content:space-between;padding-top:8px;border-top:0.5px solid var(--border);"><span style="font-size:11px;font-weight:700;color:var(--yellow);">💸 Juros:</span><span style="font-size:13px;font-weight:700;color:var(--yellow);" id="prev-juros"></span></div>
     </div>
-
     <button class="btn btn-primary" id="d-save-btn" onclick="saveDebt()">Criar Parcelas</button>
   </div>
 </div>
@@ -247,8 +194,7 @@
   applyTheme();
   injectNav('transactions.html');
 
-  let month = Utils.getActiveMonth();
-  let activeTab = 'all';
+  let month = Utils.getActiveMonth(), activeTab = 'all';
   let allTx = [], categories = [], accounts = [], cards = [];
   let txType = 'expense', recType = 'expense';
 
@@ -256,10 +202,7 @@
 
   function setTab(tab, el) {
     activeTab = tab;
-    document.querySelectorAll('.tab').forEach(t => {
-      t.classList.remove('tab-all','tab-income','tab-expense');
-      t.style.background = 'var(--bg-card)'; t.style.color = 'var(--text-3)';
-    });
+    document.querySelectorAll('.tab').forEach(t => { t.classList.remove('tab-all','tab-income','tab-expense'); t.style.background='var(--bg-card)'; t.style.color='var(--text-3)'; });
     if (tab==='all') el.classList.add('tab-all');
     else if (tab==='income') el.classList.add('tab-income');
     else if (tab==='expense') el.classList.add('tab-expense');
@@ -271,184 +214,105 @@
   async function load() {
     document.getElementById('month-label').textContent = Utils.formatMonth(month);
     document.getElementById('list-container').innerHTML = '<div style="padding:0 14px;"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>';
-    const [txRes, catRes, accRes, cardRes] = await Promise.all([API.listTransactions({month}), API.listCategories(), API.listAccounts(), API.listCards()]);
-    allTx = txRes.success ? txRes.data : [];
-    categories = catRes.success ? catRes.data : [];
-    accounts = accRes.success ? accRes.data : [];
-    cards = cardRes.success ? cardRes.data : [];
-    const income = allTx.filter(t=>t.type==='income'&&t.status!=='cancelled');
-    const expense = allTx.filter(t=>t.type==='expense'&&t.status!=='cancelled');
-    const totalIn = income.reduce((s,t)=>s+Number(t.expected_amount||0),0);
-    const totalExp = expense.reduce((s,t)=>s+Number(t.expected_amount||0),0);
-    document.getElementById('ph-income').textContent = Utils.formatCurrency(totalIn);
-    document.getElementById('ph-expense').textContent = Utils.formatCurrency(totalExp);
-    document.getElementById('ph-net').textContent = Utils.formatCurrency(totalIn - totalExp);
+    const [txRes,catRes,accRes,cardRes] = await Promise.all([API.listTransactions({month}),API.listCategories(),API.listAccounts(),API.listCards()]);
+    allTx=txRes.success?txRes.data:[]; categories=catRes.success?catRes.data:[]; accounts=accRes.success?accRes.data:[]; cards=cardRes.success?cardRes.data:[];
+    const income=allTx.filter(t=>t.type==='income'&&t.status!=='cancelled');
+    const expense=allTx.filter(t=>t.type==='expense'&&t.status!=='cancelled');
+    const totalIn=income.reduce((s,t)=>s+Number(t.expected_amount||0),0);
+    const totalExp=expense.reduce((s,t)=>s+Number(t.expected_amount||0),0);
+    document.getElementById('ph-income').textContent=Utils.formatCurrency(totalIn);
+    document.getElementById('ph-expense').textContent=Utils.formatCurrency(totalExp);
+    document.getElementById('ph-net').textContent=Utils.formatCurrency(totalIn-totalExp);
     renderList();
   }
 
   function renderList() {
-    let filtered = allTx.filter(t=>t.status!=='cancelled');
-    if (activeTab==='income') filtered = filtered.filter(t=>t.type==='income');
-    else if (activeTab==='expense') filtered = filtered.filter(t=>t.type==='expense');
-    else if (activeTab==='recurring') filtered = filtered.filter(t=>t.is_recurring==true||t.is_recurring==='TRUE');
-    else if (activeTab==='overdue') filtered = filtered.filter(t=>Utils.isOverdue(t.due_date,t.status));
-
-    if (filtered.length===0) {
-      document.getElementById('list-container').innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><p class="empty-text">Nenhum lançamento encontrado</p><button class="btn btn-primary" style="max-width:200px;margin:0 auto;" onclick="openTypeSelector()">Adicionar</button></div>`;
-      return;
-    }
-
-    const paid = filtered.filter(t=>t.status==='paid');
-    const overdue = filtered.filter(t=>t.status!=='paid'&&Utils.isOverdue(t.due_date,t.status));
-    const pending = filtered.filter(t=>t.status!=='paid'&&!Utils.isOverdue(t.due_date,t.status));
-    let html = '';
-    if (overdue.length>0) html += `<div class="date-label">⚠ Vencidas</div><div class="tx-list">${overdue.map(renderCard).join('')}</div>`;
-    if (pending.length>0) html += `<div class="date-label">Pendentes</div><div class="tx-list">${pending.map(renderCard).join('')}</div>`;
-    if (paid.length>0) html += `<div class="date-label">✓ Concluídas</div><div class="tx-list">${paid.map(renderCard).join('')}</div>`;
-    document.getElementById('list-container').innerHTML = html;
+    let f=allTx.filter(t=>t.status!=='cancelled');
+    if (activeTab==='income') f=f.filter(t=>t.type==='income');
+    else if (activeTab==='expense') f=f.filter(t=>t.type==='expense');
+    else if (activeTab==='recurring') f=f.filter(t=>t.is_recurring==true||t.is_recurring==='TRUE');
+    else if (activeTab==='overdue') f=f.filter(t=>Utils.isOverdue(t.due_date,t.status));
+    if (f.length===0) { document.getElementById('list-container').innerHTML=`<div class="empty-state"><div class="empty-icon">📭</div><p class="empty-text">Nenhum lançamento encontrado</p><button class="btn btn-primary" style="max-width:200px;margin:0 auto;" onclick="openTypeSelector()">Adicionar</button></div>`; return; }
+    const paid=f.filter(t=>t.status==='paid'), overdue=f.filter(t=>t.status!=='paid'&&Utils.isOverdue(t.due_date,t.status)), pending=f.filter(t=>t.status!=='paid'&&!Utils.isOverdue(t.due_date,t.status));
+    let html='';
+    if (overdue.length>0) html+=`<div class="date-label">⚠ Vencidas</div><div class="tx-list">${overdue.map(renderCard).join('')}</div>`;
+    if (pending.length>0) html+=`<div class="date-label">Pendentes</div><div class="tx-list">${pending.map(renderCard).join('')}</div>`;
+    if (paid.length>0) html+=`<div class="date-label">✓ Concluídas</div><div class="tx-list">${paid.map(renderCard).join('')}</div>`;
+    document.getElementById('list-container').innerHTML=html;
   }
 
   function renderCard(tx) {
-    const overdue = Utils.isOverdue(tx.due_date, tx.status);
-    const cat = categories.find(c=>c.category_id===tx.category_id);
-    const acc = accounts.find(a=>a.account_id===tx.account_id);
-    const card = cards.find(c=>c.card_id===tx.card_id);
-    const icon = cat?.icon||(tx.card_id?'💳':tx.type==='income'?'💼':'💰');
-    const sub = [cat?.name, acc?.name||card?.name].filter(Boolean).join(' · ');
-    const badge = tx.status==='paid'
-      ? `<span class="badge b-paid">${tx.type==='income'?'✓ Recebido':'✓ Pago'}</span>`
-      : overdue ? '<span class="badge b-over">⚠ Vencida</span>'
-      : `<span class="badge b-pend">Vence ${Utils.formatDate(tx.due_date)}</span>`;
-    const recTag = (tx.is_recurring==true||tx.is_recurring==='TRUE') ? '<span class="badge" style="background:var(--accent-light);color:var(--accent-2);margin-left:4px;">🔄</span>' : '';
-    const instTag = tx.installment_number ? `<span class="badge" style="background:#FEF3C7;color:#92400E;margin-left:4px;">📌 ${tx.installment_number}ª parc.</span>` : '';
-
-    // Show actual vs expected if paid with difference
-    let amtHtml = '';
-    if (tx.status==='paid' && tx.actual_amount && Number(tx.actual_amount) !== Number(tx.expected_amount)) {
-      const diff = Number(tx.actual_amount) - Number(tx.expected_amount);
-      const diffColor = diff > 0 ? 'var(--red)' : 'var(--green)';
-      const diffLabel = diff > 0 ? `+${Utils.formatCurrency(diff)} juros` : `${Utils.formatCurrency(Math.abs(diff))} desconto`;
-      amtHtml = `<div class="tx-amt ${tx.type==='income'?'tx-pos':'tx-neg'}">${tx.type==='income'?'+':'-'}${Utils.formatCurrency(tx.actual_amount)}</div>
-        <div style="font-size:9px;color:${diffColor};">${diffLabel}</div>`;
+    const overdue=Utils.isOverdue(tx.due_date,tx.status);
+    const cat=categories.find(c=>c.category_id===tx.category_id);
+    const acc=accounts.find(a=>a.account_id===tx.account_id);
+    const card=cards.find(c=>c.card_id===tx.card_id);
+    const icon=cat?.icon||(tx.card_id?'💳':tx.type==='income'?'💼':'💰');
+    const sub=[cat?.name,acc?.name||card?.name].filter(Boolean).join(' · ');
+    const badge=tx.status==='paid'?`<span class="badge b-paid">${tx.type==='income'?'✓ Recebido':'✓ Pago'}</span>`:overdue?'<span class="badge b-over">⚠ Vencida</span>':`<span class="badge b-pend">Vence ${Utils.formatDate(tx.due_date)}</span>`;
+    const recTag=(tx.is_recurring==true||tx.is_recurring==='TRUE')?'<span class="badge" style="background:var(--accent-light);color:var(--accent-2);margin-left:4px;">🔄</span>':'';
+    const instTag=tx.installment_number?`<span class="badge" style="background:#FEF3C7;color:#92400E;margin-left:4px;">📌 ${tx.installment_number}ª parc.</span>`:'';
+    let amtHtml='';
+    if (tx.status==='paid'&&tx.actual_amount&&Math.abs(Number(tx.actual_amount)-Number(tx.expected_amount))>0.01) {
+      const diff=Number(tx.actual_amount)-Number(tx.expected_amount);
+      const isBad=tx.type==='expense'?diff>0:diff<0;
+      const diffLabel=tx.type==='expense'?(diff>0?`+${Utils.formatCurrency(diff)} juros`:`${Utils.formatCurrency(Math.abs(diff))} desconto`):(diff>0?`+${Utils.formatCurrency(diff)} a mais`:`${Utils.formatCurrency(Math.abs(diff))} a menos`);
+      amtHtml=`<div class="tx-amt ${tx.type==='income'?'tx-pos':'tx-neg'}">${tx.type==='income'?'+':'-'}${Utils.formatCurrency(tx.actual_amount)}</div><div style="font-size:9px;color:${isBad?'var(--red)':'var(--green)'};">${diffLabel}</div>`;
     } else {
-      const amt = tx.status==='paid' ? Number(tx.actual_amount||tx.expected_amount) : Number(tx.expected_amount);
-      amtHtml = `<div class="tx-amt ${tx.type==='income'?'tx-pos':'tx-neg'}">${tx.type==='income'?'+':'-'}${Utils.formatCurrency(amt)}</div>`;
+      const amt=tx.status==='paid'?Number(tx.actual_amount||tx.expected_amount):Number(tx.expected_amount);
+      amtHtml=`<div class="tx-amt ${tx.type==='income'?'tx-pos':'tx-neg'}">${tx.type==='income'?'+':'-'}${Utils.formatCurrency(amt)}</div>`;
     }
-
-    const payBtn = tx.status==='pending'
-      ? `<button class="pay-btn" onclick="openPayModal('${tx.transaction_id}','${tx.account_id||''}',${tx.expected_amount},'${tx.type}','${tx.description.replace(/'/g,"\\'")}')">
-          ${tx.type==='income'?'Confirmar':'Pagar'}
-        </button>` : '';
-
-    return `
-      <div class="tx-card ${overdue&&tx.status!=='paid'?'overdue':''}">
-        <div class="tx-ico" style="background:${(cat?.color||'#6366F1')}22;">${icon}</div>
-        <div class="tx-body">
-          <div class="tx-name">${tx.description}</div>
-          <div class="tx-cat">${sub}</div>
-          <div>${badge}${recTag}${instTag}</div>
-        </div>
-        <div class="tx-right">${amtHtml}${payBtn}</div>
-      </div>`;
+    const payBtn=tx.status==='pending'?`<button class="pay-btn" onclick="openPayModal('${tx.transaction_id}','${tx.account_id||''}',${tx.expected_amount},'${tx.type}','${tx.description.replace(/'/g,"\\'")}')">${tx.type==='income'?'Confirmar':'Pagar'}</button>`:'';
+    return `<div class="tx-card ${overdue&&tx.status!=='paid'?'overdue':''}"><div class="tx-ico" style="background:${(cat?.color||'#6366F1')}22;">${icon}</div><div class="tx-body"><div class="tx-name">${tx.description}</div><div class="tx-cat">${sub}</div><div>${badge}${recTag}${instTag}</div></div><div class="tx-right">${amtHtml}${payBtn}</div></div>`;
   }
 
-  // ── Pay modal ──────────────────────────────────────────
-  function openPayModal(txId, accountId, expected, type, name) {
-    document.getElementById('pay-tx-id').value = txId;
-    document.getElementById('pay-account-id').value = accountId;
-    document.getElementById('pay-expected').value = expected;
-    document.getElementById('pay-type').value = type;
-    document.getElementById('pay-expected-display').textContent = Utils.formatCurrency(expected);
-    document.getElementById('pay-tx-name').textContent = name;
-    document.getElementById('pay-date').value = new Date().toISOString().split('T')[0];
-    document.getElementById('pay-amount').value = expected;
-    document.getElementById('pay-diff-box').style.display = 'none';
+  function openPayModal(txId,accountId,expected,type,name) {
+    document.getElementById('pay-tx-id').value=txId; document.getElementById('pay-account-id').value=accountId;
+    document.getElementById('pay-expected').value=expected; document.getElementById('pay-type').value=type;
+    document.getElementById('pay-expected-display').textContent=Utils.formatCurrency(expected);
+    document.getElementById('pay-tx-name').textContent=name;
+    document.getElementById('pay-date').value=new Date().toISOString().split('T')[0];
+    document.getElementById('pay-amount').value=expected;
+    document.getElementById('pay-diff-box').style.display='none';
     document.getElementById('pay-modal').classList.add('open');
   }
   function closePayModal() { document.getElementById('pay-modal').classList.remove('open'); }
 
   function calcPayDiff() {
-    const expected = parseFloat(document.getElementById('pay-expected').value)||0;
-    const actual = parseFloat(document.getElementById('pay-amount').value)||0;
-    const type = document.getElementById('pay-type').value;
-    const box = document.getElementById('pay-diff-box');
-
-    if (actual > 0 && actual !== expected) {
-      const diff = actual - expected;
-      const isExpense = type === 'expense';
-      box.style.display = 'block';
-
-      if (isExpense) {
-        if (diff > 0) {
-          box.style.background = 'var(--red-bg)';
-          box.style.border = '0.5px solid #FECACA';
-          document.getElementById('pay-diff-label').textContent = '💸 Juros / Multa';
-          document.getElementById('pay-diff-label').style.color = 'var(--red)';
-          document.getElementById('pay-diff-val').textContent = '+' + Utils.formatCurrency(diff);
-          document.getElementById('pay-diff-val').style.color = 'var(--red)';
-          document.getElementById('pay-diff-desc').textContent = 'Você pagou mais do que o previsto.';
-          document.getElementById('pay-diff-desc').style.color = '#B91C1C';
-        } else {
-          box.style.background = 'var(--green-bg)';
-          box.style.border = '0.5px solid #BBF7D0';
-          document.getElementById('pay-diff-label').textContent = '✅ Desconto';
-          document.getElementById('pay-diff-label').style.color = 'var(--green)';
-          document.getElementById('pay-diff-val').textContent = Utils.formatCurrency(Math.abs(diff));
-          document.getElementById('pay-diff-val').style.color = 'var(--green)';
-          document.getElementById('pay-diff-desc').textContent = 'Você pagou menos do que o previsto.';
-          document.getElementById('pay-diff-desc').style.color = '#166534';
-        }
-      } else {
-        if (diff > 0) {
-          box.style.background = 'var(--green-bg)';
-          box.style.border = '0.5px solid #BBF7D0';
-          document.getElementById('pay-diff-label').textContent = '✅ Recebi a mais';
-          document.getElementById('pay-diff-label').style.color = 'var(--green)';
-          document.getElementById('pay-diff-val').textContent = '+' + Utils.formatCurrency(diff);
-          document.getElementById('pay-diff-val').style.color = 'var(--green)';
-          document.getElementById('pay-diff-desc').textContent = 'Você recebeu mais do que o previsto.';
-          document.getElementById('pay-diff-desc').style.color = '#166534';
-        } else {
-          box.style.background = 'var(--red-bg)';
-          box.style.border = '0.5px solid #FECACA';
-          document.getElementById('pay-diff-label').textContent = '⚠ Recebi a menos';
-          document.getElementById('pay-diff-label').style.color = 'var(--red)';
-          document.getElementById('pay-diff-val').textContent = Utils.formatCurrency(Math.abs(diff));
-          document.getElementById('pay-diff-val').style.color = 'var(--red)';
-          document.getElementById('pay-diff-desc').textContent = 'Você recebeu menos do que o previsto.';
-          document.getElementById('pay-diff-desc').style.color = '#B91C1C';
-        }
-      }
-    } else {
-      box.style.display = 'none';
-    }
+    const expected=parseFloat(document.getElementById('pay-expected').value)||0;
+    const actual=parseFloat(document.getElementById('pay-amount').value)||0;
+    const type=document.getElementById('pay-type').value;
+    const box=document.getElementById('pay-diff-box');
+    if (actual>0&&Math.abs(actual-expected)>0.01) {
+      const diff=actual-expected, isExpense=type==='expense', isBad=isExpense?diff>0:diff<0;
+      box.style.display='block'; box.style.background=isBad?'var(--red-bg)':'var(--green-bg)'; box.style.border=isBad?'0.5px solid #FECACA':'0.5px solid #BBF7D0';
+      document.getElementById('pay-diff-label').textContent=isBad?(isExpense?'💸 Juros / Multa':'⚠ Recebi a menos'):(isExpense?'✅ Desconto':'✅ Recebi a mais');
+      document.getElementById('pay-diff-label').style.color=isBad?'var(--red)':'var(--green)';
+      document.getElementById('pay-diff-val').textContent=(diff>0?'+':'')+Utils.formatCurrency(diff);
+      document.getElementById('pay-diff-val').style.color=isBad?'var(--red)':'var(--green)';
+      document.getElementById('pay-diff-desc').textContent=isBad?(isExpense?'Você pagou mais do que o previsto.':'Você recebeu menos do que o previsto.'):(isExpense?'Você pagou menos do que o previsto.':'Você recebeu mais do que o previsto.');
+      document.getElementById('pay-diff-desc').style.color=isBad?'#B91C1C':'#166534';
+    } else box.style.display='none';
   }
 
   async function confirmPayment() {
-    const txId = document.getElementById('pay-tx-id').value;
-    const accountId = document.getElementById('pay-account-id').value;
-    const date = document.getElementById('pay-date').value;
-    const amount = parseFloat(document.getElementById('pay-amount').value);
-    if (!date || !amount) { Utils.toast('Preencha data e valor','error'); return; }
-    const btn = document.getElementById('pay-save-btn');
-    btn.disabled=true; btn.textContent='Confirmando...';
-    const res = await API.markPaid({transaction_id:txId, account_id:accountId, paid_date:date, actual_amount:amount});
+    const txId=document.getElementById('pay-tx-id').value, accountId=document.getElementById('pay-account-id').value;
+    const date=document.getElementById('pay-date').value, amount=parseFloat(document.getElementById('pay-amount').value);
+    if (!date||!amount) { Utils.toast('Preencha data e valor','error'); return; }
+    const btn=document.getElementById('pay-save-btn'); btn.disabled=true; btn.textContent='Confirmando...';
+    const res=await API.markPaid({transaction_id:txId,account_id:accountId,paid_date:date,actual_amount:amount});
     btn.disabled=false; btn.textContent='✅ Confirmar Pagamento';
-    if (res.success) { Utils.toast('✅ Pagamento confirmado!'); closePayModal(); load(); }
-    else Utils.toast(res.error||'Erro','error');
+    if (res.success) { Utils.toast('✅ Pagamento confirmado!'); closePayModal(); load(); } else Utils.toast(res.error||'Erro','error');
   }
 
-  // ── Type selector ──────────────────────────────────────
   function openTypeSelector() { document.getElementById('type-selector').classList.add('open'); }
   function closeTypeSelector() { document.getElementById('type-selector').classList.remove('open'); }
 
-  // ── Despesa / Receita ──────────────────────────────────
   function openModal(type) {
-    closeTypeSelector(); txType = type;
-    document.getElementById('tx-modal-title').textContent = type==='income'?'Nova Receita':'Nova Despesa';
-    document.getElementById('tx-date').value = new Date().toISOString().split('T')[0];
-    document.getElementById('tx-category').innerHTML = '<option value="">Sem categoria</option>' + categories.filter(c=>c.type===type).map(c=>`<option value="${c.category_id}">${c.icon||''} ${c.name}</option>`).join('');
-    document.getElementById('tx-account').innerHTML = '<option value="">Sem conta</option>' + accounts.map(a=>`<option value="${a.account_id}">${a.name}</option>`).join('');
+    closeTypeSelector(); txType=type;
+    document.getElementById('tx-modal-title').textContent=type==='income'?'Nova Receita':'Nova Despesa';
+    document.getElementById('tx-date').value=new Date().toISOString().split('T')[0];
+    document.getElementById('tx-category').innerHTML='<option value="">Sem categoria</option>'+categories.filter(c=>c.type===type).map(c=>`<option value="${c.category_id}">${c.icon||''} ${c.name}</option>`).join('');
+    document.getElementById('tx-account').innerHTML='<option value="">Sem conta</option>'+accounts.map(a=>`<option value="${a.account_id}">${a.name}</option>`).join('');
     document.getElementById('tx-modal').classList.add('open');
   }
   function closeTxModal() { document.getElementById('tx-modal').classList.remove('open'); }
@@ -459,16 +323,14 @@
     const btn=document.getElementById('tx-save-btn'); btn.disabled=true; btn.textContent='Salvando...';
     const res=await API.createTransaction({type:txType,description:desc,expected_amount:amount,due_date:date,category_id:document.getElementById('tx-category').value,account_id:document.getElementById('tx-account').value,notes:document.getElementById('tx-notes').value});
     btn.disabled=false; btn.textContent='Salvar';
-    if (res.success) { Utils.toast('✅ Salvo!'); closeTxModal(); ['tx-desc','tx-amount','tx-notes'].forEach(id=>document.getElementById(id).value=''); load(); }
-    else Utils.toast(res.error||'Erro','error');
+    if (res.success) { Utils.toast('✅ Salvo!'); closeTxModal(); ['tx-desc','tx-amount','tx-notes'].forEach(id=>document.getElementById(id).value=''); load(); } else Utils.toast(res.error||'Erro','error');
   }
 
-  // ── Cartão ────────────────────────────────────────────
   function openCardModal() {
     closeTypeSelector();
-    document.getElementById('cm-date').value = new Date().toISOString().split('T')[0];
-    document.getElementById('cm-card').innerHTML = '<option value="">Selecione o cartão</option>' + cards.map(c=>`<option value="${c.card_id}">${c.name}</option>`).join('');
-    document.getElementById('cm-category').innerHTML = '<option value="">Sem categoria</option>' + categories.filter(c=>c.type==='expense').map(c=>`<option value="${c.category_id}">${c.icon||''} ${c.name}</option>`).join('');
+    document.getElementById('cm-date').value=new Date().toISOString().split('T')[0];
+    document.getElementById('cm-card').innerHTML='<option value="">Selecione o cartão</option>'+cards.map(c=>`<option value="${c.card_id}">${c.name}</option>`).join('');
+    document.getElementById('cm-category').innerHTML='<option value="">Sem categoria</option>'+categories.filter(c=>c.type==='expense').map(c=>`<option value="${c.category_id}">${c.icon||''} ${c.name}</option>`).join('');
     document.getElementById('card-modal').classList.add('open');
   }
   function closeCardModal() { document.getElementById('card-modal').classList.remove('open'); }
@@ -479,17 +341,14 @@
     const btn=document.getElementById('cm-save-btn'); btn.disabled=true; btn.textContent='Salvando...';
     const res=await API.createTransaction({type:'expense',description:desc,expected_amount:amount,due_date:date,card_id:cardId,category_id:document.getElementById('cm-category').value});
     btn.disabled=false; btn.textContent='Registrar Compra';
-    if (res.success) { Utils.toast('✅ Compra registrada!'); closeCardModal(); ['cm-desc','cm-amount'].forEach(id=>document.getElementById(id).value=''); load(); }
-    else Utils.toast(res.error||'Erro','error');
+    if (res.success) { Utils.toast('✅ Compra registrada!'); closeCardModal(); ['cm-desc','cm-amount'].forEach(id=>document.getElementById(id).value=''); load(); } else Utils.toast(res.error||'Erro','error');
   }
 
-  // ── Transferência ─────────────────────────────────────
   function openTransferModal() {
     closeTypeSelector();
-    document.getElementById('tr-date').value = new Date().toISOString().split('T')[0];
-    const opts = '<option value="">Selecione</option>' + accounts.map(a=>`<option value="${a.account_id}">${a.name}</option>`).join('');
-    document.getElementById('tr-from').innerHTML = opts;
-    document.getElementById('tr-to').innerHTML = opts;
+    document.getElementById('tr-date').value=new Date().toISOString().split('T')[0];
+    const opts='<option value="">Selecione</option>'+accounts.map(a=>`<option value="${a.account_id}">${a.name}</option>`).join('');
+    document.getElementById('tr-from').innerHTML=opts; document.getElementById('tr-to').innerHTML=opts;
     document.getElementById('transfer-modal').classList.add('open');
   }
   function closeTransferModal() { document.getElementById('transfer-modal').classList.remove('open'); }
@@ -501,27 +360,16 @@
     if (fromId===toId) { Utils.toast('Contas devem ser diferentes','error'); return; }
     const notes=document.getElementById('tr-notes').value;
     const btn=document.getElementById('tr-save-btn'); btn.disabled=true; btn.textContent='Transferindo...';
-    const fromName=accounts.find(a=>a.account_id===fromId)?.name||'origem';
-    const toName=accounts.find(a=>a.account_id===toId)?.name||'destino';
-    const [r1,r2]=await Promise.all([
-      API.createTransaction({type:'expense',description:`Transferência → ${toName}`,expected_amount:amount,due_date:date,account_id:fromId,notes}),
-      API.createTransaction({type:'income',description:`Transferência ← ${fromName}`,expected_amount:amount,due_date:date,account_id:toId,notes})
-    ]);
+    const fromName=accounts.find(a=>a.account_id===fromId)?.name||'origem', toName=accounts.find(a=>a.account_id===toId)?.name||'destino';
+    const [r1,r2]=await Promise.all([API.createTransaction({type:'expense',description:`Transferência → ${toName}`,expected_amount:amount,due_date:date,account_id:fromId,notes}),API.createTransaction({type:'income',description:`Transferência ← ${fromName}`,expected_amount:amount,due_date:date,account_id:toId,notes})]);
     btn.disabled=false; btn.textContent='Transferir';
     if (r1.success&&r2.success) {
-      await Promise.all([
-        API.markPaid({transaction_id:r1.data.transaction_id,account_id:fromId,paid_date:date,actual_amount:amount}),
-        API.markPaid({transaction_id:r2.data.transaction_id,account_id:toId,paid_date:date,actual_amount:amount})
-      ]);
+      await Promise.all([API.markPaid({transaction_id:r1.data.transaction_id,account_id:fromId,paid_date:date,actual_amount:amount}),API.markPaid({transaction_id:r2.data.transaction_id,account_id:toId,paid_date:date,actual_amount:amount})]);
       Utils.toast('✅ Transferência realizada!'); closeTransferModal(); ['tr-amount','tr-notes'].forEach(id=>document.getElementById(id).value=''); load();
     } else Utils.toast('Erro ao transferir','error');
   }
 
-  // ── Recorrência ───────────────────────────────────────
-  function openRecurrenceModal() {
-    closeTypeSelector(); setRecType('expense');
-    document.getElementById('rec-modal').classList.add('open');
-  }
+  function openRecurrenceModal() { closeTypeSelector(); setRecType('expense'); document.getElementById('rec-modal').classList.add('open'); }
   function closeRecurrenceModal() { document.getElementById('rec-modal').classList.remove('open'); }
   function setRecType(type) {
     recType=type;
@@ -537,29 +385,22 @@
     const btn=document.getElementById('rec-save-btn'); btn.disabled=true; btn.textContent='Salvando...';
     const res=await API.createRecurrence({description:desc,type:recType,expected_amount:amount,recurrence_day:day,category_id:document.getElementById('rec-category').value,account_id:document.getElementById('rec-account').value,start_date:new Date().toISOString().split('T')[0]});
     btn.disabled=false; btn.textContent='Salvar Recorrência';
-    if (res.success) {
-      await API.generateMonth(month);
-      Utils.toast('✅ Recorrência salva!'); closeRecurrenceModal(); ['rec-desc','rec-amount','rec-day'].forEach(id=>document.getElementById(id).value=''); load();
-    } else Utils.toast(res.error||'Erro','error');
+    if (res.success) { await API.generateMonth(month); Utils.toast('✅ Recorrência salva!'); closeRecurrenceModal(); ['rec-desc','rec-amount','rec-day'].forEach(id=>document.getElementById(id).value=''); load(); } else Utils.toast(res.error||'Erro','error');
   }
 
-  // ── Parcelamento ──────────────────────────────────────
   function checkRetroactive() {
-    const dateVal = document.getElementById('d-date').value;
+    const dateVal=document.getElementById('d-date').value;
     if (!dateVal) return;
-    const firstMonth = dateVal.slice(0,7);
-    const currentMonth = Utils.currentMonth();
-    const section = document.getElementById('retroactive-section');
-    section.style.display = firstMonth < currentMonth ? 'block' : 'none';
-    if (firstMonth >= currentMonth) document.getElementById('d-last-paid').value = '';
+    document.getElementById('retroactive-section').style.display=dateVal.slice(0,7)<Utils.currentMonth()?'block':'none';
+    if (dateVal.slice(0,7)>=Utils.currentMonth()) document.getElementById('d-last-paid').value='';
   }
 
   function openDebtModal() {
     closeTypeSelector();
-    document.getElementById('d-date').value = new Date().toISOString().split('T')[0];
-    document.getElementById('retroactive-section').style.display = 'none';
-    document.getElementById('d-account').innerHTML = '<option value="">Sem conta</option>'+accounts.map(a=>`<option value="${a.account_id}">${a.name}</option>`).join('')+cards.map(c=>`<option value="card:${c.card_id}">💳 ${c.name}</option>`).join('');
-    document.getElementById('d-category').innerHTML = '<option value="">Sem categoria</option>'+categories.filter(c=>c.type==='expense').map(c=>`<option value="${c.category_id}">${c.icon||''} ${c.name}</option>`).join('');
+    document.getElementById('d-date').value=new Date().toISOString().split('T')[0];
+    document.getElementById('retroactive-section').style.display='none';
+    document.getElementById('d-account').innerHTML='<option value="">Sem conta</option>'+accounts.map(a=>`<option value="${a.account_id}">${a.name}</option>`).join('')+cards.map(c=>`<option value="card:${c.card_id}">💳 ${c.name}</option>`).join('');
+    document.getElementById('d-category').innerHTML='<option value="">Sem categoria</option>'+categories.filter(c=>c.type==='expense').map(c=>`<option value="${c.category_id}">${c.icon||''} ${c.name}</option>`).join('');
     document.getElementById('debt-modal').classList.add('open');
   }
   function closeDebtModal() { document.getElementById('debt-modal').classList.remove('open'); }
@@ -583,27 +424,9 @@
     const accountId=accVal.startsWith('card:')?'':accVal, cardId=accVal.startsWith('card:')?accVal.replace('card:',''):'';
     const lastPaid=document.getElementById('d-last-paid').value||'';
     const btn=document.getElementById('d-save-btn'); btn.disabled=true; btn.textContent=`Criando ${totalInstall} parcelas...`;
-    const res=await API.createDebt({
-      description:desc,
-      original_amount:parseFloat(document.getElementById('d-original').value)||(totalInstall*installAmt),
-      total_installments:totalInstall,
-      installment_amount:installAmt,
-      first_due_date:firstDate,
-      last_paid_month:lastPaid,
-      category_id:document.getElementById('d-category').value,
-      account_id:accountId,
-      card_id:cardId
-    });
+    const res=await API.createDebt({description:desc,original_amount:parseFloat(document.getElementById('d-original').value)||(totalInstall*installAmt),total_installments:totalInstall,installment_amount:installAmt,first_due_date:firstDate,last_paid_month:lastPaid,category_id:document.getElementById('d-category').value,account_id:accountId,card_id:cardId});
     btn.disabled=false; btn.textContent='Criar Parcelas';
-    if (res.success) {
-      const paidCount = res.data?.paid_count || 0;
-      Utils.toast(`✅ ${totalInstall} parcelas criadas!${paidCount>0?' '+paidCount+' marcadas como histórico.':''}`);
-      closeDebtModal();
-      ['d-desc','d-original','d-total','d-install','d-last-paid'].forEach(id=>document.getElementById(id).value='');
-      document.getElementById('debt-preview').style.display='none';
-      document.getElementById('retroactive-section').style.display='none';
-      load();
-    } else Utils.toast(res.error||'Erro','error');
+    if (res.success) { const paidCount=res.data?.paid_count||0; Utils.toast(`✅ ${totalInstall} parcelas criadas!${paidCount>0?' '+paidCount+' como histórico.':''}`); closeDebtModal(); ['d-desc','d-original','d-total','d-install','d-last-paid'].forEach(id=>document.getElementById(id).value=''); document.getElementById('debt-preview').style.display='none'; document.getElementById('retroactive-section').style.display='none'; load(); } else Utils.toast(res.error||'Erro','error');
   }
 
   if (window.location.hash==='#new') setTimeout(openTypeSelector,300);
