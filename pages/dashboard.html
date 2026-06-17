@@ -8,21 +8,20 @@
 </head>
 <body>
 <div class="page">
-
-  <div class="hero" id="hero-section">
+  <div class="hero">
     <div class="hero-top">
       <div>
         <p class="hero-greeting">Boa tarde,</p>
-        <p class="hero-name" id="user-name">Carregando...</p>
+        <p class="hero-name" id="user-name">...</p>
       </div>
-      <div style="display:flex;align-items:center;gap:10px;">
-        <button class="theme-btn" onclick="toggleTheme()" title="Alternar tema">🌙</button>
-        <a href="settings.html" class="hero-avatar" id="user-initials">?</a>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button class="theme-btn" onclick="toggleTheme()">🌙</button>
+        <button class="menu-btn" onclick="openDrawer()"><i class="ti ti-menu-2"></i></button>
       </div>
     </div>
     <p class="hero-bal-label">Saldo total em contas</p>
     <p class="hero-bal" id="total-balance">R$ 0,00</p>
-    <p class="hero-sub" id="hero-sub">Atualizando...</p>
+    <p class="hero-sub" id="hero-sub">Carregando...</p>
     <div class="hero-pills">
       <div class="hpill"><div class="hpill-lbl">A receber</div><div class="hpill-val pos" id="income-pending">R$ 0</div></div>
       <div class="hpill"><div class="hpill-lbl">A pagar</div><div class="hpill-val neg" id="expense-pending">R$ 0</div></div>
@@ -40,51 +39,30 @@
   <div id="overdue-alert"></div>
 
   <div class="sec">
-    <div class="sec-hdr"><span class="sec-title">Minhas Contas</span></div>
+    <div class="sec-hdr"><span class="sec-title">🏦 Minhas Contas</span><a href="settings.html" class="sec-link">Gerenciar →</a></div>
     <div class="acc-scroll" id="accounts-list"><div class="skeleton" style="min-width:110px;height:90px;"></div></div>
   </div>
 
   <div class="divider"></div>
 
-  <div class="sec sec-last">
-    <div class="sec-hdr"><span class="sec-title">Maiores Gastos</span><a href="transactions.html" class="sec-link">Ver todos →</a></div>
+  <div class="sec">
+    <div class="sec-hdr"><span class="sec-title">📊 Maiores Gastos</span><a href="transactions.html" class="sec-link">Ver todos →</a></div>
     <div class="cat-list" id="cat-list"><div class="skeleton"></div><div class="skeleton"></div></div>
   </div>
 
+  <div class="divider"></div>
 
   <div class="sec sec-last">
-    <div class="sec-hdr"><span class="sec-title">Acesso rápido</span></div>
+    <div class="sec-hdr"><span class="sec-title">⚡ Acesso Rápido</span></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-      <a href="recurrences.html" style="text-decoration:none;">
-        <div style="background:var(--bg-card);border-radius:var(--radius);padding:12px;border:0.5px solid var(--border);display:flex;align-items:center;gap:10px;">
-          <span style="font-size:20px;">🔄</span>
-          <span style="font-size:12px;font-weight:600;color:var(--text);">Recorrências</span>
-        </div>
-      </a>
-      <a href="reports.html" style="text-decoration:none;">
-        <div style="background:var(--bg-card);border-radius:var(--radius);padding:12px;border:0.5px solid var(--border);display:flex;align-items:center;gap:10px;">
-          <span style="font-size:20px;">📊</span>
-          <span style="font-size:12px;font-weight:600;color:var(--text);">Relatórios</span>
-        </div>
-      </a>
-      <a href="debts.html" style="text-decoration:none;">
-        <div style="background:var(--bg-card);border-radius:var(--radius);padding:12px;border:0.5px solid var(--border);display:flex;align-items:center;gap:10px;">
-          <span style="font-size:20px;">📌</span>
-          <span style="font-size:12px;font-weight:600;color:var(--text);">Dívidas</span>
-        </div>
-      </a>
-      <a href="settings.html" style="text-decoration:none;">
-        <div style="background:var(--bg-card);border-radius:var(--radius);padding:12px;border:0.5px solid var(--border);display:flex;align-items:center;gap:10px;">
-          <span style="font-size:20px;">⚙️</span>
-          <span style="font-size:12px;font-weight:600;color:var(--text);">Configurações</span>
-        </div>
-      </a>
+      <a href="recurrences.html" style="text-decoration:none;"><div style="background:var(--bg-card);border-radius:var(--radius);padding:12px;border:0.5px solid var(--border);display:flex;align-items:center;gap:10px;"><span style="font-size:20px;">🔄</span><span style="font-size:12px;font-weight:600;color:var(--text);">Recorrências</span></div></a>
+      <a href="reports.html" style="text-decoration:none;"><div style="background:var(--bg-card);border-radius:var(--radius);padding:12px;border:0.5px solid var(--border);display:flex;align-items:center;gap:10px;"><span style="font-size:20px;">📊</span><span style="font-size:12px;font-weight:600;color:var(--text);">Relatórios</span></div></a>
+      <a href="debts.html" style="text-decoration:none;"><div style="background:var(--bg-card);border-radius:var(--radius);padding:12px;border:0.5px solid var(--border);display:flex;align-items:center;gap:10px;"><span style="font-size:20px;">📌</span><span style="font-size:12px;font-weight:600;color:var(--text);">Dívidas</span></div></a>
+      <a href="settings.html" style="text-decoration:none;"><div style="background:var(--bg-card);border-radius:var(--radius);padding:12px;border:0.5px solid var(--border);display:flex;align-items:center;gap:10px;"><span style="font-size:20px;">⚙️</span><span style="font-size:12px;font-weight:600;color:var(--text);">Configurações</span></div></a>
     </div>
   </div>
-
 </div>
 
-<!-- Bottom nav -->
 <div class="bnav-wrap">
   <div class="bnav">
     <a href="dashboard.html" class="ntab on"><i class="ti ti-home"></i><span>Início</span><span class="ndot"></span></a>
@@ -101,21 +79,19 @@
 <script src="../js/nav.js"></script>
 <script>
   if (!Auth.requireAuth()) throw '';
+  applyTheme();
+  injectNav('dashboard.html');
 
   const COLORS = ['#4F46E5','#D97706','#DC2626','#16A34A','#0EA5E9','#EC4899','#F97316'];
   const ACC_CLASSES = ['ac-purple','ac-blue','ac-green','ac-pink','ac-orange'];
+  const typeLabel = {checking:'Conta corrente',savings:'Poupança',wallet:'Carteira',investment:'Investimento',other:'Conta'};
 
   async function load() {
     const user = Auth.getUser();
-    document.getElementById('user-name').textContent = user?.name?.split(' ')[0] + ' 👋' || '';
-    document.getElementById('user-initials').textContent = (user?.name||'?').split(' ').map(n=>n[0]).slice(0,2).join('');
+    document.getElementById('user-name').textContent = (user?.name?.split(' ')[0] || '') + ' 👋';
     document.getElementById('hero-sub').textContent = Utils.formatMonth(Utils.getActiveMonth());
 
-    const [sumRes, catRes] = await Promise.all([
-      API.getDashboard(Utils.getActiveMonth()),
-      API.getCategoryBreakdown(Utils.getActiveMonth())
-    ]);
-
+    const [sumRes, catRes] = await Promise.all([API.getDashboard(Utils.getActiveMonth()), API.getCategoryBreakdown(Utils.getActiveMonth())]);
     if (!sumRes.success) return;
     const s = sumRes.data;
 
@@ -129,48 +105,37 @@
     document.getElementById('overdue-count').textContent = s.overdue_count + (s.overdue_count === 1 ? ' conta' : ' contas');
 
     if (s.overdue_count > 0) {
-      document.getElementById('overdue-alert').innerHTML = `
-        <div class="alert-banner alert-danger">
-          <span class="alert-icon">🚨</span>
-          <div><div class="alert-title">${s.overdue_count} conta${s.overdue_count>1?'s':''} vencida${s.overdue_count>1?'s':''}</div>
-          <div class="alert-sub">${Utils.formatCurrency(s.overdue_amount)} em atraso</div></div>
-        </div>`;
+      document.getElementById('overdue-alert').innerHTML = `<div class="alert-banner alert-danger"><span class="alert-icon">🚨</span><div><div class="alert-title">${s.overdue_count} conta${s.overdue_count>1?'s':''} vencida${s.overdue_count>1?'s':''}</div><div class="alert-sub">${Utils.formatCurrency(s.overdue_amount)} em atraso</div></div></div>`;
     }
 
-    // Accounts
     if (s.accounts?.length > 0) {
       document.getElementById('accounts-list').innerHTML = s.accounts.map((a,i) => `
-        <div class="acc-card ${ACC_CLASSES[i % ACC_CLASSES.length]}">
+        <div class="acc-card ${ACC_CLASSES[i%ACC_CLASSES.length]}">
           <div class="acc-emoji">🏦</div>
           <div class="acc-name">${a.name}</div>
-          <div class="acc-type">${a.type === 'checking' ? 'Conta corrente' : a.type === 'savings' ? 'Poupança' : a.type === 'wallet' ? 'Carteira' : 'Conta'}</div>
+          <div class="acc-type">${typeLabel[a.type]||'Conta'}</div>
           <div class="acc-bal">${Utils.formatCurrency(a.current_balance)}</div>
         </div>`).join('');
     } else {
-      document.getElementById('accounts-list').innerHTML = '<p style="font-size:12px;color:var(--text-3);padding:8px 0;">Nenhuma conta cadastrada</p>';
+      document.getElementById('accounts-list').innerHTML = '<p style="font-size:12px;color:var(--text-3);padding:8px 0;">Nenhuma conta. <a href="settings.html" style="color:var(--accent-2);">Cadastrar →</a></p>';
     }
 
-    // Categories
     const cats = catRes.success ? catRes.data : [];
     if (cats.length > 0) {
       const max = cats[0].total || 1;
       document.getElementById('cat-list').innerHTML = cats.slice(0,5).map((c,i) => `
         <div class="cat-row">
-          <div class="cat-icon" style="background:${c.color}22;">${c.icon || '💰'}</div>
+          <div class="cat-icon" style="background:${c.color||COLORS[i%COLORS.length]}22;">${c.icon||'💰'}</div>
           <div class="cat-body">
-            <div class="cat-top">
-              <span class="cat-name">${c.name}</span>
-              <span class="cat-amt" style="color:${COLORS[i%COLORS.length]}">${Utils.formatCurrency(c.total)}</span>
-            </div>
+            <div class="cat-top"><span class="cat-name">${c.name}</span><span class="cat-amt" style="color:${COLORS[i%COLORS.length]}">${Utils.formatCurrency(c.total)}</span></div>
             <div class="bar-track"><div class="bar-fill" style="width:${Math.round((c.total/max)*100)}%;background:${COLORS[i%COLORS.length]};"></div></div>
           </div>
         </div>`).join('');
     } else {
-      document.getElementById('cat-list').innerHTML = '<p style="font-size:12px;color:var(--text-3);">Sem lançamentos este mês</p>';
+      document.getElementById('cat-list').innerHTML = '<p style="font-size:12px;color:var(--text-3);">Sem lançamentos este mês.</p>';
     }
   }
 
-  applyTheme();
   load();
 </script>
 </body>
