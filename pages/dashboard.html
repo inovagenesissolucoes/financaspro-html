@@ -87,10 +87,22 @@
   const ACC_CLASSES = ['ac-purple','ac-blue','ac-green','ac-pink','ac-orange'];
   const typeLabel = {checking:'Conta corrente',savings:'Poupança',wallet:'Carteira',investment:'Investimento',other:'Conta'};
 
+  async function autoGenerateRecurrences() {
+  const key = 'fp_generated_' + Utils.getActiveMonth();
+  if (localStorage.getItem(key)) return;
+  const res = await API.generateMonth(Utils.getActiveMonth());
+  if (res.success) {
+    const count = res.data?.count || 0;
+    if (count > 0) Utils.toast(`🔄 ${count} recorrência(s) gerada(s)!`);
+  }
+  localStorage.setItem(key, '1');
+}
+
   async function load() {
     const user = Auth.getUser();
     document.getElementById('user-name').textContent = (user?.name?.split(' ')[0]||'') + ' 👋';
     document.getElementById('hero-sub').textContent = Utils.formatMonth(Utils.getActiveMonth());
+    autoGenerateRecurrences();
     const [sumRes, catRes] = await Promise.all([API.getDashboard(Utils.getActiveMonth()), API.getCategoryBreakdown(Utils.getActiveMonth())]);
     if (!sumRes.success) return;
     const s = sumRes.data;
