@@ -11,17 +11,21 @@
 <div class="page">
 
   <div class="page-hero">
-    <div class="page-hero-row" style="gap:10px;">
-      <div>
+    <div class="page-hero-row">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <a href="dashboard.html" class="back-btn">‹</a>
+        <div>
+          <h1 class="page-hero-title">Cartões</h1>
+          <p class="page-hero-sub">Gerencie seus cartões e faturas</p>
+        </div>
       </div>
-      <div style="display:flex;align-items:center;gap:10px;"><a href="dashboard.html" class="back-btn">&#8249;</a><div><h1 class="page-hero-title">Cartões</h1><p class="page-hero-sub">Gerencie seus cartões e faturas</p></div>
       <button class="menu-btn" onclick="openDrawer()"><i class="ti ti-menu-2"></i></button>
     </div>
   </div>
 
   <div id="list-container" style="padding:14px;">
-    <div class="skeleton" style="height:140px;"></div>
-    <div class="skeleton" style="height:140px;"></div>
+    <div class="skeleton" style="height:140px;border-radius:16px;"></div>
+    <div class="skeleton" style="height:140px;border-radius:16px;"></div>
   </div>
 
 </div>
@@ -36,7 +40,6 @@
   </div>
 </div>
 
-<!-- Modal novo cartão -->
 <div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)closeModal()">
   <div class="modal">
     <div class="modal-handle"></div>
@@ -52,7 +55,6 @@
   </div>
 </div>
 
-<!-- Modal compra no cartão -->
 <div class="modal-overlay" id="purchase-modal" onclick="if(event.target===this)closePurchaseModal()">
   <div class="modal">
     <div class="modal-handle"></div>
@@ -81,12 +83,16 @@
   async function load() {
     const [cardsRes, catRes] = await Promise.all([API.listCards(), API.listCategories()]);
     categories = catRes.success ? catRes.data.filter(c=>c.type==='expense') : [];
-    const cs = document.getElementById('p-category');
-    cs.innerHTML = '<option value="">Sem categoria</option>' + categories.map(c=>`<option value="${c.category_id}">${c.icon||''} ${c.name}</option>`).join('');
+    document.getElementById('p-category').innerHTML = '<option value="">Sem categoria</option>' + categories.map(c=>`<option value="${c.category_id}">${c.icon||''} ${c.name}</option>`).join('');
 
     const cards = cardsRes.success ? cardsRes.data : [];
     if (cards.length === 0) {
-      document.getElementById('list-container').innerHTML = `<div class="empty-state"><div class="empty-icon">💳</div><p class="empty-text">Nenhum cartão cadastrado</p><button class="btn btn-primary" style="max-width:200px;margin:0 auto;" onclick="openModal()">Adicionar cartão</button></div>`;
+      document.getElementById('list-container').innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">💳</div>
+          <p class="empty-text">Nenhum cartão cadastrado</p>
+          <button class="btn btn-primary" style="max-width:220px;margin:0 auto;" onclick="openModal()">Adicionar cartão</button>
+        </div>`;
       return;
     }
 
@@ -96,9 +102,7 @@
       const used = Number(inv?.total_amount)||0;
       const available = Math.max(0, limit - used);
       const pct = limit > 0 ? Math.min(100, Math.round((used/limit)*100)) : 0;
-      const status = inv ? (inv.status==='closed' ? '🔒 Fechada' : '🔓 Aberta') : '🔓 Aberta';
-      const statusClass = inv?.status === 'closed' ? 'inv-closed' : 'inv-open';
-
+      const statusLabel = inv ? (inv.status==='closed' ? '🔒 Fechada' : '🔓 Aberta') : '🔓 Aberta';
       return `
         <div class="cccard ${CC_CLASSES[i%CC_CLASSES.length]}">
           <div class="cc-top">
@@ -112,12 +116,12 @@
           <div class="cc-bar"><div class="cc-bar-fill" style="width:${pct}%;"></div></div>
           <div class="cc-footer">
             <div>
-              <div class="cc-fatura-lbl">${status} · ${Utils.formatCurrency(available)} disponível</div>
+              <div class="cc-fatura-lbl">${statusLabel} · ${Utils.formatCurrency(available)} disponível</div>
               <div class="cc-fatura-val">${Utils.formatCurrency(used)}</div>
             </div>
             <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
               <button class="cc-pay-btn" onclick="openPurchaseModal('${card.card_id}')">+ Compra</button>
-              ${inv && inv.status==='closed' ? `<button class="cc-pay-btn" style="background:rgba(253,224,71,0.25);border-color:rgba(253,224,71,0.5);" onclick="payInvoice('${inv.invoice_id}',${inv.total_amount})">Pagar fatura</button>` : ''}
+              ${inv && inv.status==='closed' ? `<button class="cc-pay-btn" style="background:rgba(253,224,71,0.25);" onclick="payInvoice('${inv.invoice_id}',${inv.total_amount})">Pagar fatura</button>` : ''}
             </div>
           </div>
         </div>`;
@@ -125,7 +129,7 @@
   }
 
   async function payInvoice(invoiceId, amount) {
-    const res = await API.call('invoices.markPaid', { invoice_id:invoiceId, paid_date:new Date().toISOString().split('T')[0], paid_amount:amount });
+    const res = await API.call('invoices.markPaid', {invoice_id:invoiceId, paid_date:new Date().toISOString().split('T')[0], paid_amount:amount});
     if (res.success) { Utils.toast('✅ Fatura paga!'); load(); }
     else Utils.toast(res.error||'Erro','error');
   }
@@ -145,11 +149,11 @@
     const amount = parseFloat(document.getElementById('p-amount').value);
     const date = document.getElementById('p-date').value;
     const cardId = document.getElementById('purchase-card-id').value;
-    if (!desc || !amount || !date) { Utils.toast('Preencha os campos obrigatórios','error'); return; }
+    if (!desc||!amount||!date) { Utils.toast('Preencha os campos obrigatórios','error'); return; }
     const btn = document.getElementById('p-save-btn');
-    btn.disabled = true; btn.textContent = 'Salvando...';
-    const res = await API.createTransaction({ type:'expense', description:desc, expected_amount:amount, due_date:date, card_id:cardId, category_id:document.getElementById('p-category').value });
-    btn.disabled = false; btn.textContent = 'Registrar Compra';
+    btn.disabled=true; btn.textContent='Salvando...';
+    const res = await API.createTransaction({type:'expense',description:desc,expected_amount:amount,due_date:date,card_id:cardId,category_id:document.getElementById('p-category').value});
+    btn.disabled=false; btn.textContent='Registrar Compra';
     if (res.success) { Utils.toast('✅ Compra registrada!'); closePurchaseModal(); ['p-desc','p-amount'].forEach(id=>document.getElementById(id).value=''); load(); }
     else Utils.toast(res.error||'Erro','error');
   }
@@ -158,9 +162,9 @@
     const name = document.getElementById('c-name').value.trim();
     if (!name) { Utils.toast('Digite o nome do cartão','error'); return; }
     const btn = document.getElementById('save-btn');
-    btn.disabled = true; btn.textContent = 'Salvando...';
-    const res = await API.createCard({ name, limit_amount:parseFloat(document.getElementById('c-limit').value)||0, closing_day:parseInt(document.getElementById('c-closing').value)||1, due_day:parseInt(document.getElementById('c-due').value)||10, color:document.getElementById('c-color').value });
-    btn.disabled = false; btn.textContent = 'Adicionar Cartão';
+    btn.disabled=true; btn.textContent='Salvando...';
+    const res = await API.createCard({name, limit_amount:parseFloat(document.getElementById('c-limit').value)||0, closing_day:parseInt(document.getElementById('c-closing').value)||1, due_day:parseInt(document.getElementById('c-due').value)||10, color:document.getElementById('c-color').value});
+    btn.disabled=false; btn.textContent='Adicionar Cartão';
     if (res.success) { Utils.toast('💳 Cartão adicionado!'); closeModal(); document.getElementById('c-name').value=''; load(); }
     else Utils.toast(res.error||'Erro','error');
   }
