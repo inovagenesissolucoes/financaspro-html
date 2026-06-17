@@ -17,7 +17,7 @@
       </div>
       <div style="display:flex;align-items:center;gap:10px;">
         <button class="theme-btn" onclick="toggleTheme()" title="Alternar tema">🌙</button>
-        <a href="../settings.html" class="hero-avatar" id="user-initials">?</a>
+        <a href="settings.html" class="hero-avatar" id="user-initials">?</a>
       </div>
     </div>
     <p class="hero-bal-label">Saldo total em contas</p>
@@ -51,6 +51,37 @@
     <div class="cat-list" id="cat-list"><div class="skeleton"></div><div class="skeleton"></div></div>
   </div>
 
+
+  <div class="sec sec-last">
+    <div class="sec-hdr"><span class="sec-title">Acesso rápido</span></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <a href="recurrences.html" style="text-decoration:none;">
+        <div style="background:var(--bg-card);border-radius:var(--radius);padding:12px;border:0.5px solid var(--border);display:flex;align-items:center;gap:10px;">
+          <span style="font-size:20px;">🔄</span>
+          <span style="font-size:12px;font-weight:600;color:var(--text);">Recorrências</span>
+        </div>
+      </a>
+      <a href="reports.html" style="text-decoration:none;">
+        <div style="background:var(--bg-card);border-radius:var(--radius);padding:12px;border:0.5px solid var(--border);display:flex;align-items:center;gap:10px;">
+          <span style="font-size:20px;">📊</span>
+          <span style="font-size:12px;font-weight:600;color:var(--text);">Relatórios</span>
+        </div>
+      </a>
+      <a href="debts.html" style="text-decoration:none;">
+        <div style="background:var(--bg-card);border-radius:var(--radius);padding:12px;border:0.5px solid var(--border);display:flex;align-items:center;gap:10px;">
+          <span style="font-size:20px;">📌</span>
+          <span style="font-size:12px;font-weight:600;color:var(--text);">Dívidas</span>
+        </div>
+      </a>
+      <a href="settings.html" style="text-decoration:none;">
+        <div style="background:var(--bg-card);border-radius:var(--radius);padding:12px;border:0.5px solid var(--border);display:flex;align-items:center;gap:10px;">
+          <span style="font-size:20px;">⚙️</span>
+          <span style="font-size:12px;font-weight:600;color:var(--text);">Configurações</span>
+        </div>
+      </a>
+    </div>
+  </div>
+
 </div>
 
 <!-- Bottom nav -->
@@ -60,7 +91,7 @@
     <a href="transactions.html" class="ntab"><i class="ti ti-list"></i><span>Lançamentos</span></a>
     <div class="ncenter"><button class="fab-nav" onclick="window.location.href='transactions.html#new'"><i class="ti ti-plus"></i></button></div>
     <a href="cards.html" class="ntab"><i class="ti ti-credit-card"></i><span>Cartões</span></a>
-    <a href="goals.html" class="ntab"><i class="ti ti-target"></i><span>Metas</span></a>
+    <a href="more.html" class="ntab"><i class="ti ti-dots"></i><span>Mais</span></a>
   </div>
 </div>
 
