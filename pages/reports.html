@@ -12,21 +12,35 @@
 <div class="page">
 
   <div class="page-hero">
-    <div class="page-hero-row" style="gap:10px;">
-      <div>
+    <div class="page-hero-row">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <button class="menu-btn" onclick="openDrawer()"><i class="ti ti-menu-2"></i></button>
+        <div>
+          <h1 class="page-hero-title">Relatórios</h1>
+          <p class="page-hero-sub" id="report-period">Carregando...</p>
+        </div>
       </div>
-      <div style="display:flex;align-items:center;gap:10px;"><a href="dashboard.html" class="back-btn">&#8249;</a><div><h1 class="page-hero-title">Relatórios</h1><p class="page-hero-sub" id="report-period"></p></div>
     </div>
+
     <!-- Period selector -->
-    <div style="display:flex;gap:6px;margin-top:10px;">
+    <div style="display:flex;gap:6px;margin-top:12px;flex-wrap:wrap;">
       <button class="period-btn active" onclick="setPeriod(3,this)">3 meses</button>
       <button class="period-btn" onclick="setPeriod(6,this)">6 meses</button>
       <button class="period-btn" onclick="setPeriod(12,this)">12 meses</button>
+      <button class="period-btn" onclick="openCustomPeriod()" id="custom-btn">📅 Personalizado</button>
+    </div>
+
+    <!-- Custom period (hidden by default) -->
+    <div id="custom-period" style="display:none;margin-top:10px;display:none;gap:8px;align-items:center;">
+      <input type="month" id="custom-from" style="flex:1;background:rgba(255,255,255,0.15);border:0.5px solid rgba(255,255,255,0.3);color:#fff;border-radius:9px;padding:7px 10px;font-size:12px;">
+      <span style="color:rgba(255,255,255,0.7);font-size:12px;">até</span>
+      <input type="month" id="custom-to" style="flex:1;background:rgba(255,255,255,0.15);border:0.5px solid rgba(255,255,255,0.3);color:#fff;border-radius:9px;padding:7px 10px;font-size:12px;">
+      <button onclick="applyCustomPeriod()" style="background:rgba(255,255,255,0.2);border:0.5px solid rgba(255,255,255,0.3);color:#fff;padding:7px 12px;border-radius:9px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;">Aplicar</button>
     </div>
   </div>
 
   <!-- Summary cards -->
-  <div class="stat-grid" id="summary-grid">
+  <div class="stat-grid">
     <div class="scard scard-3"><div class="scard-icon">📥</div><div class="scard-lbl">Total Receitas</div><div class="scard-val" id="total-income">R$ 0</div></div>
     <div class="scard scard-2"><div class="scard-icon">📤</div><div class="scard-lbl">Total Despesas</div><div class="scard-val" id="total-expense">R$ 0</div></div>
     <div class="scard scard-1"><div class="scard-icon">💰</div><div class="scard-lbl">Saldo Período</div><div class="scard-val" id="total-net">R$ 0</div></div>
@@ -54,15 +68,14 @@
 
   <div class="divider"></div>
 
-  <!-- Análise inteligente -->
+  <!-- Análise -->
   <div class="sec sec-last">
-    <div class="sec-hdr"><span class="sec-title">🧠 Análise</span></div>
+    <div class="sec-hdr"><span class="sec-title">🧠 Análise Inteligente</span></div>
     <div id="analysis-container"></div>
   </div>
 
 </div>
 
-<!-- Bottom nav -->
 <div class="bnav-wrap">
   <div class="bnav">
     <a href="dashboard.html" class="ntab"><i class="ti ti-home"></i><span>Início</span></a>
@@ -73,15 +86,6 @@
   </div>
 </div>
 
-<style>
-.period-btn { padding:6px 14px; border-radius:20px; border:1.5px solid rgba(255,255,255,0.3); background:rgba(255,255,255,0.12); color:#fff; font-size:11px; font-weight:600; cursor:pointer; font-family:inherit; transition:all 0.15s; }
-.period-btn.active { background:#fff; color:#4338CA; border-color:#fff; }
-.analysis-card { background:var(--bg-card); border-radius:var(--radius); padding:14px; border:0.5px solid var(--border); margin-bottom:10px; display:flex; align-items:flex-start; gap:12px; }
-.analysis-icon { font-size:22px; flex-shrink:0; }
-.analysis-title { font-size:12px; font-weight:700; color:var(--text); margin-bottom:3px; }
-.analysis-text { font-size:11px; color:var(--text-3); line-height:1.5; }
-</style>
-
 <script src="../js/config.js"></script>
 <script src="../js/api.js"></script>
 <script src="../js/utils.js"></script>
@@ -91,36 +95,62 @@
   applyTheme();
   injectNav('reports.html');
 
-  let currentPeriod = 3;
-  let evolutionChart = null;
-  let donutChart = null;
-
-  function setPeriod(months, btn) {
-    currentPeriod = months;
-    document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    loadReports();
-  }
+  let currentPeriod = 3, customMonths = null;
+  let evolutionChart = null, donutChart = null;
 
   function getMonthsList(count) {
-    const months = [];
-    const now = new Date();
-    for (let i = count - 1; i >= 0; i--) {
+    const months = [], now = new Date();
+    for (let i = count-1; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       months.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);
     }
     return months;
   }
 
+  function setPeriod(months, btn) {
+    currentPeriod = months; customMonths = null;
+    document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('custom-period').style.display = 'none';
+    loadReports();
+  }
+
+  function openCustomPeriod() {
+    const cp = document.getElementById('custom-period');
+    cp.style.display = cp.style.display === 'none' ? 'flex' : 'none';
+    document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('custom-btn').classList.add('active');
+    // Set defaults
+    const now = new Date();
+    const to = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+    const from = `${now.getFullYear()}-${String(now.getMonth()-2).padStart(2,'0')}`;
+    if (!document.getElementById('custom-from').value) document.getElementById('custom-from').value = from;
+    if (!document.getElementById('custom-to').value) document.getElementById('custom-to').value = to;
+  }
+
+  function applyCustomPeriod() {
+    const from = document.getElementById('custom-from').value;
+    const to = document.getElementById('custom-to').value;
+    if (!from || !to) { Utils.toast('Selecione período de início e fim','error'); return; }
+    if (from > to) { Utils.toast('Data inicial deve ser antes da final','error'); return; }
+    // Build months list
+    const months = [];
+    let cur = from;
+    while (cur <= to) {
+      months.push(cur);
+      const [y,m] = cur.split('-').map(Number);
+      const next = new Date(y, m, 1);
+      cur = `${next.getFullYear()}-${String(next.getMonth()+1).padStart(2,'0')}`;
+    }
+    customMonths = months;
+    loadReports();
+  }
+
   async function loadReports() {
-    const months = getMonthsList(currentPeriod);
+    const months = customMonths || getMonthsList(currentPeriod);
     document.getElementById('report-period').textContent = `${Utils.formatMonth(months[0])} → ${Utils.formatMonth(months[months.length-1])}`;
 
-    // Fetch all months in parallel
-    const results = await Promise.all(months.map(m => Promise.all([
-      API.getDashboard(m),
-      API.getCategoryBreakdown(m)
-    ])));
+    const results = await Promise.all(months.map(m => Promise.all([API.getDashboard(m), API.getCategoryBreakdown(m)])));
 
     const monthData = results.map(([sum, cat], i) => ({
       month: months[i],
@@ -131,18 +161,16 @@
       cats: cat.success ? cat.data : []
     }));
 
-    // Totals
     const totalIncome  = monthData.reduce((s,m) => s + m.income, 0);
     const totalExpense = monthData.reduce((s,m) => s + m.expense, 0);
     const totalNet     = totalIncome - totalExpense;
-    const avgExpense   = totalExpense / currentPeriod;
+    const avgExpense   = totalExpense / months.length;
 
     document.getElementById('total-income').textContent  = Utils.formatCurrency(totalIncome);
     document.getElementById('total-expense').textContent = Utils.formatCurrency(totalExpense);
     document.getElementById('total-net').textContent     = Utils.formatCurrency(totalNet);
     document.getElementById('avg-expense').textContent   = Utils.formatCurrency(avgExpense);
 
-    // Evolution chart
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
     const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
     const textColor = isDark ? '#9CA3AF' : '#6B7280';
@@ -162,43 +190,35 @@
         plugins: { legend: { labels: { color: textColor, font: { size: 11 }, boxWidth: 12 } } },
         scales: {
           x: { grid: { color: gridColor }, ticks: { color: textColor, font: { size: 10 } } },
-          y: { grid: { color: gridColor }, ticks: { color: textColor, font: { size: 10 }, callback: v => 'R$' + (v/1000).toFixed(0) + 'k' } }
+          y: { grid: { color: gridColor }, ticks: { color: textColor, font: { size: 10 }, callback: v => 'R$' + (v >= 1000 ? (v/1000).toFixed(0)+'k' : v) } }
         }
       }
     });
 
-    // Aggregate categories across all months
     const catMap = {};
-    monthData.forEach(m => {
-      m.cats.forEach(c => {
-        if (!catMap[c.name]) catMap[c.name] = { name: c.name, total: 0, color: c.color, icon: c.icon };
-        catMap[c.name].total += c.total;
-      });
-    });
+    monthData.forEach(m => m.cats.forEach(c => {
+      if (!catMap[c.name]) catMap[c.name] = { name: c.name, total: 0, color: c.color, icon: c.icon };
+      catMap[c.name].total += c.total;
+    }));
     const aggCats = Object.values(catMap).sort((a,b) => b.total - a.total);
 
-    // Donut chart
     if (donutChart) donutChart.destroy();
     if (aggCats.length > 0) {
       donutChart = new Chart(document.getElementById('donut-chart'), {
         type: 'doughnut',
         data: {
           labels: aggCats.slice(0,6).map(c => c.name),
-          datasets: [{ data: aggCats.slice(0,6).map(c => c.total), backgroundColor: aggCats.slice(0,6).map(c => c.color || '#6366F1'), borderWidth: 0, hoverOffset: 4 }]
+          datasets: [{ data: aggCats.slice(0,6).map(c => c.total), backgroundColor: aggCats.slice(0,6).map(c => c.color||'#6366F1'), borderWidth: 0, hoverOffset: 4 }]
         },
-        options: {
-          responsive: true, maintainAspectRatio: true, cutout: '60%',
-          plugins: { legend: { position: 'bottom', labels: { color: textColor, font: { size: 10 }, boxWidth: 10, padding: 8 } } }
-        }
+        options: { responsive: true, cutout: '60%', plugins: { legend: { position: 'bottom', labels: { color: textColor, font: { size: 10 }, boxWidth: 10, padding: 8 } } } }
       });
     }
 
-    // Category breakdown list
     document.getElementById('cat-breakdown').innerHTML = aggCats.slice(0,8).map(c => {
       const pct = totalExpense > 0 ? Math.round((c.total/totalExpense)*100) : 0;
       return `
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-          <div style="width:34px;height:34px;border-radius:10px;background:${c.color}22;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;">${c.icon||'💰'}</div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+          <div style="width:36px;height:36px;border-radius:10px;background:${c.color}22;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">${c.icon||'💰'}</div>
           <div style="flex:1;min-width:0;">
             <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
               <span style="font-size:12px;font-weight:600;color:var(--text);">${c.name}</span>
@@ -210,30 +230,28 @@
         </div>`;
     }).join('');
 
-    // Smart analysis
     const analysis = [];
-    const topCat = aggCats[0];
-    if (topCat && totalExpense > 0) {
-      const topPct = Math.round((topCat.total/totalExpense)*100);
-      analysis.push({ icon: '🔍', title: `${topCat.name} é seu maior gasto`, text: `Representou ${topPct}% das suas despesas no período — ${Utils.formatCurrency(topCat.total)} no total.` });
+    if (aggCats[0] && totalExpense > 0) {
+      const pct = Math.round((aggCats[0].total/totalExpense)*100);
+      analysis.push({ icon:'🔍', title:`${aggCats[0].name} é seu maior gasto`, text:`Representou ${pct}% das despesas — ${Utils.formatCurrency(aggCats[0].total)} no período.` });
     }
-    if (totalNet > 0) {
-      analysis.push({ icon: '✅', title: 'Você está no positivo!', text: `Sobrou ${Utils.formatCurrency(totalNet)} no período. Continue assim e transfira para suas metas de economia.` });
-    } else if (totalNet < 0) {
-      analysis.push({ icon: '⚠️', title: 'Gastos acima das receitas', text: `Você gastou ${Utils.formatCurrency(Math.abs(totalNet))} a mais do que recebeu. Revise suas despesas maiores.` });
-    }
-    if (avgExpense > 0) {
-      analysis.push({ icon: '📊', title: 'Média mensal de gastos', text: `Você gastou em média ${Utils.formatCurrency(avgExpense)} por mês nos últimos ${currentPeriod} meses.` });
-    }
+    if (totalNet > 0) analysis.push({ icon:'✅', title:'Você está no positivo!', text:`Sobrou ${Utils.formatCurrency(totalNet)} no período. Considere direcionar para suas metas.` });
+    else if (totalNet < 0) analysis.push({ icon:'⚠️', title:'Gastos acima das receitas', text:`Você gastou ${Utils.formatCurrency(Math.abs(totalNet))} a mais do que recebeu. Revise suas maiores despesas.` });
+    analysis.push({ icon:'📊', title:'Média mensal de gastos', text:`Você gastou em média ${Utils.formatCurrency(avgExpense)} por mês no período selecionado.` });
     if (aggCats.length >= 3) {
-      const top3 = aggCats.slice(0,3).map(c=>c.name).join(', ');
-      analysis.push({ icon: '💡', title: 'Top 3 categorias', text: `${top3} concentram a maior parte dos seus gastos. Foque na redução dessas para economizar mais.` });
+      const pct0 = totalExpense > 0 ? Math.round((aggCats[0].total/totalExpense)*100) : 0;
+      const pct1 = totalExpense > 0 ? Math.round((aggCats[1].total/totalExpense)*100) : 0;
+      const pct2 = totalExpense > 0 ? Math.round((aggCats[2].total/totalExpense)*100) : 0;
+      analysis.push({ icon:'💡', title:'Top 3 categorias concentram mais gastos', text:`${aggCats[0].name} (${pct0}%), ${aggCats[1].name} (${pct1}%) e ${aggCats[2].name} (${pct2}%) representam a maior parte dos seus gastos.` });
     }
 
     document.getElementById('analysis-container').innerHTML = analysis.map(a => `
-      <div class="analysis-card">
-        <span class="analysis-icon">${a.icon}</span>
-        <div><p class="analysis-title">${a.title}</p><p class="analysis-text">${a.text}</p></div>
+      <div style="background:var(--bg-card);border-radius:var(--radius);padding:14px;border:0.5px solid var(--border);margin-bottom:10px;display:flex;align-items:flex-start;gap:12px;">
+        <span style="font-size:22px;flex-shrink:0;">${a.icon}</span>
+        <div>
+          <p style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:3px;">${a.title}</p>
+          <p style="font-size:11px;color:var(--text-3);line-height:1.5;">${a.text}</p>
+        </div>
       </div>`).join('');
   }
 
