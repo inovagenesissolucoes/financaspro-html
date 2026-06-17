@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>FinançasPRO — Lançamentos</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<div class="page pt-safe">
+
+  <div class="flex items-center justify-between mb-4">
+    <h1>Lançamentos</h1>
+  </div>
+
+  <div class="month-nav">
+    <button onclick="changeMonth(-1)">‹</button>
+    <span id="month-label"></span>
+    <button onclick="changeMonth(1)">›</button>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="setTab('all', this)">Todos</button>
+    <button class="tab" onclick="setTab('income', this)">Receitas</button>
+    <button class="tab" onclick="setTab('expense', this)">Despesas</button>
+  </div>
+
+  <div id="list-container"></div>
+
+</div>
+
+<!-- FAB -->
+<button class="fab" onclick="openModal()">+</button>
+
+<!-- Modal novo lançamento -->
+<div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Novo Lançamento</h2>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+
+    <div class="type-toggle">
+      <button class="type-btn expense active" id="btn-expense" onclick="setType('expense')">📤 Despesa</button>
+      <button class="type-btn income" id="btn-income" onclick="setType('income')">📥 Receita</button>
+    </div>
+
+    <div class="field">
+      <label class="field-label">Descrição *</label>
+      <input type="text" id="tx-desc" placeholder="Ex: Mercado, Salário...">
+    </div>
+    <div class="field">
+      <label class="field-label">Valor (R$) *</label>
+      <input type="number" id="tx-amount" placeholder="0,00" step="0.01" min="0">
+    </div>
+    <div class="field">
+      <label class="field-label">Data de vencimento *</label>
+      <input type="date" id="tx-date">
+    </div>
+    <div class="field">
+      <label class="field-label">Categoria</label>
+      <select id="tx-category"><option value="">Sem categoria</option></select>
+    </div>
+    <div class="field">
+      <label class="field-label">Conta</label>
+      <select id="tx-account"><option value="">Sem conta</option></select>
+    </div>
+    <div class="field">
+      <label class="field-label">Observações</label>
+      <input type="text" id="tx-notes" placeholder="Opcional">
+    </div>
+
+    <button class="btn btn-primary" id="save-btn" onclick="saveTransaction()">Salvar Lançamento</button>
+  </div>
+</div>
+
+<script src="../js/config.js"></script>
+<script src="../js/api.js"></script>
+<script src="../js/utils.js"></script>
+<script src="../js/nav.js"></script>
+<script>
+  if (!Auth.requireAuth()) throw new Error('redirect');
+  renderNav('transactions.html');
+
+  let month = Utils.getActiveMonth();
+  let activeTab = 'all';
+  let allTx = [];
+  let categories = [];
+  let accounts = [];
+
+  function changeMonth(delta) {
+    month = Utils.addMonths(month, delta);
+    Utils.setActiveMonth(month);
+    load();
+  }
+
+  function setTab(tab, el) {
+    activeTab = tab;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    renderList();
+  }
+
+  async function load() {
+    document.getElementById('month-label').textContent = Utils.formatMonth(month);
+    document.getElementById('list-container').innerHTML = '<div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>';
+
+    const [txRes, catRes, accRes] = await Promise.all([
+      API.listTransactions({ month }),
+      API.listCategories(),
+      API.listAccounts()
+    ]);
+
+    allTx = txRes.success ? txRes.data : [];
+    categories = catRes.success ? catRes.data : [];
+    accounts = accRes.success ? accRes.data : [];
+
+    // Populate selects
+    fillSelects();
+    renderList();
+  }
+
+  function fillSelects() {
+    const catSel = document.getElementById('tx-category');
+    const accSel = document.getElementById('tx-account');
+    catSel.innerHTML = '<option value="">Sem categoria</option>' +
+      categories.map(c => `<option value="${c.category_id}">${c.icon || ''} ${c.name}${c.subcategory ? ' — ' + c.subcategory : ''}</option>`).join('');
+    accSel.innerHTML = '<option value="">Sem conta</option>' +
+      accounts.map(a => `<option value="${a.account_id}">${a.name}</option>`).join('');
+  }
+
+  function renderList() {
+    const filtered = allTx.filter(t => {
+      if (t.status === 'cancelled') return false;
+      if (activeTab === 'income') return t.type === 'income';
+      if (activeTab === 'expense') return t.type === 'expense';
+      return true;
+    });
+
+    if (filtered.length === 0) {
+      document.getElementById('list-container').innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">📭</div>
+          <p class="empty-text">Nenhum lançamento em ${Utils.formatMonth(month)}</p>
+        </div>`;
+      return;
+    }
+
+    // Group by date
+    const groups = {};
+    filtered.forEach(t => {
+      const d = (t.due_date || '').split('T')[0];
+      if (!groups[d]) groups[d] = [];
+      groups[d].push(t);
+    });
+
+    const html = Object.entries(groups)
+      .sort(([a],[b]) => b.localeCompare(a))
+      .map(([date, txs]) => `
+        <div class="section-header">
+          <span class="section-date">${Utils.formatDate(date)}</span>
+        </div>
+        ${txs.map(tx => renderTxItem(tx)).join('')}
+      `).join('');
+
+    document.getElementById('list-container').innerHTML = html;
+  }
+
+  function renderTxItem(tx) {
+    const overdue = Utils.isOverdue(tx.due_date, tx.status);
+    const cat = categories.find(c => c.category_id === tx.category_id);
+    const icon = cat?.icon || (tx.type === 'income' ? '💚' : '🔴');
+    const color = tx.type === 'income' ? 'var(--green)' : 'var(--red)';
+    const sign = tx.type === 'income' ? '+' : '-';
+    const dateLabel = tx.status === 'paid'
+      ? `✅ Pago em ${Utils.formatDate(tx.paid_date)}`
+      : overdue ? '⚠ Vencida' : `Vence ${Utils.formatDate(tx.due_date)}`;
+
+    return `
+      <div class="tx-item ${overdue && tx.status !== 'paid' ? 'overdue' : ''}">
+        <div class="tx-icon">${icon}</div>
+        <div class="tx-info">
+          <div class="tx-name">${tx.description}</div>
+          <div class="tx-date ${overdue && tx.status !== 'paid' ? 'overdue-text' : ''}">${dateLabel}</div>
+        </div>
+        <div class="tx-right">
+          <div class="tx-amount" style="color:${color}">${sign}${Utils.formatCurrency(tx.expected_amount)}</div>
+          ${tx.status === 'pending' ? `<button class="tx-status-btn" onclick="markPaid('${tx.transaction_id}', '${tx.account_id || ''}', ${tx.expected_amount})">Pagar</button>` : ''}
+        </div>
+      </div>
+    `;
+  }
+
+  async function markPaid(txId, accountId, amount) {
+    const result = await API.markPaid({
+      transaction_id: txId,
+      account_id: accountId,
+      paid_date: new Date().toISOString().split('T')[0],
+      actual_amount: amount
+    });
+    if (result.success) { Utils.toast('Marcado como pago ✅'); load(); }
+    else Utils.toast(result.error || 'Erro', 'error');
+  }
+
+  // Modal
+  let txType = 'expense';
+
+  function openModal() {
+    document.getElementById('tx-date').value = new Date().toISOString().split('T')[0];
+    document.getElementById('modal-overlay').classList.add('open');
+  }
+  function closeModal() {
+    document.getElementById('modal-overlay').classList.remove('open');
+  }
+  function setType(type) {
+    txType = type;
+    document.getElementById('btn-expense').classList.toggle('active', type === 'expense');
+    document.getElementById('btn-income').classList.toggle('active', type === 'income');
+
+    // Filter categories by type
+    const catSel = document.getElementById('tx-category');
+    catSel.innerHTML = '<option value="">Sem categoria</option>' +
+      categories.filter(c => c.type === type).map(c =>
+        `<option value="${c.category_id}">${c.icon || ''} ${c.name}${c.subcategory ? ' — ' + c.subcategory : ''}</option>`
+      ).join('');
+  }
+
+  async function saveTransaction() {
+    const desc = document.getElementById('tx-desc').value.trim();
+    const amount = parseFloat(document.getElementById('tx-amount').value);
+    const date = document.getElementById('tx-date').value;
+
+    if (!desc || !amount || !date) { Utils.toast('Preencha descrição, valor e data', 'error'); return; }
+
+    const btn = document.getElementById('save-btn');
+    btn.disabled = true; btn.textContent = 'Salvando...';
+
+    const result = await API.createTransaction({
+      type: txType,
+      description: desc,
+      expected_amount: amount,
+      due_date: date,
+      category_id: document.getElementById('tx-category').value,
+      account_id: document.getElementById('tx-account').value,
+      notes: document.getElementById('tx-notes').value,
+    });
+
+    btn.disabled = false; btn.textContent = 'Salvar Lançamento';
+
+    if (result.success) {
+      Utils.toast('Lançamento salvo! ✅');
+      closeModal();
+      // Reset form
+      ['tx-desc','tx-amount','tx-notes'].forEach(id => document.getElementById(id).value = '');
+      load();
+    } else {
+      Utils.toast(result.error || 'Erro ao salvar', 'error');
+    }
+  }
+
+  load();
+</script>
+</body>
+</html>
