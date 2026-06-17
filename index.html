@@ -4,26 +4,23 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>FinançasPRO — Login</title>
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="style.css">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#0F172A">
 </head>
 <body>
   <div class="login-page">
-    <!-- Logo -->
     <div style="padding-top: 64px; text-align: center;">
       <div class="login-logo">💰</div>
       <h1 style="font-size:1.5rem; margin-bottom:6px;">FinançasPRO</h1>
       <p class="text-secondary text-sm">Seu controle financeiro pessoal</p>
     </div>
 
-    <!-- Form -->
     <form id="login-form" style="display:flex; flex-direction:column; gap:14px;">
       <div class="field">
         <label class="field-label">Email</label>
         <input type="email" id="email" placeholder="seu@email.com" autocomplete="email" required>
       </div>
-
       <div class="field">
         <label class="field-label">Senha</label>
         <div style="position:relative;">
@@ -31,22 +28,19 @@
           <button type="button" id="toggle-pass" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:1rem;">👁</button>
         </div>
       </div>
-
       <button type="submit" class="btn btn-primary" id="login-btn">Entrar</button>
     </form>
 
-    <!-- Footer -->
     <div style="text-align:center; padding-bottom:32px;">
       <a href="recover.html" style="color:var(--accent-2); font-size:0.875rem; text-decoration:none;">Esqueci minha senha</a>
     </div>
   </div>
 
-  <script src="js/config.js"></script>
-  <script src="js/api.js"></script>
-  <script src="js/utils.js"></script>
+  <script src="config.js"></script>
+  <script src="api.js"></script>
+  <script src="utils.js"></script>
   <script>
-    // Redirect if already logged in
-    if (Auth.isLoggedIn()) window.location.href = 'pages/dashboard.html';
+    if (Auth.isLoggedIn()) window.location.href = 'dashboard.html';
 
     document.getElementById('toggle-pass').addEventListener('click', () => {
       const inp = document.getElementById('password');
@@ -58,16 +52,18 @@
       const btn = document.getElementById('login-btn');
       const email = document.getElementById('email').value;
       const password = document.getElementById('password').value;
-
       btn.disabled = true;
       btn.textContent = 'Entrando...';
 
       const result = await API.login(email, password);
+      console.log('Login result:', JSON.stringify(result));
 
       if (result.success) {
-        Auth.setSession(result.data.user, result.data.token);
-        Utils.toast(`Bem-vindo! 👋`);
-        setTimeout(() => window.location.href = 'pages/dashboard.html', 500);
+        const token = result.token || result.data?.token;
+        const user = result.user || result.data?.user;
+        Auth.setSession(user, token);
+        Utils.toast(`Bem-vindo, ${user?.name || ''}! 👋`);
+        setTimeout(() => window.location.href = 'dashboard.html', 500);
       } else {
         Utils.toast(result.error || 'Erro ao entrar', 'error');
         btn.disabled = false;
