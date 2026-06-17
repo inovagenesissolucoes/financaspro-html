@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>FinançasPRO — Configurações</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<div class="page">
+
+  <div class="page-hero">
+    <div class="page-hero-row">
+      <div><h1 class="page-hero-title">Configurações</h1><p class="page-hero-sub">Gerencie seu app</p></div>
+      <button class="theme-btn" onclick="toggleTheme()">🌙</button>
+    </div>
+  </div>
+
+  <!-- Perfil -->
+  <div class="sec mt-3">
+    <div class="sec-hdr"><span class="sec-title">👤 Meu Perfil</span></div>
+    <div class="dcard" style="margin-bottom:0;">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;">
+        <div style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#6D28D9,#7C3AED);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#fff;" id="profile-avatar">?</div>
+        <div><p class="font-bold" id="profile-name" style="font-size:15px;">Carregando...</p><p class="text-muted text-xs" id="profile-email"></p></div>
+      </div>
+      <button class="btn btn-ghost" onclick="Auth.logout()" style="color:var(--red);border-color:var(--red-bg);">🚪 Sair da conta</button>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Contas -->
+  <div class="sec">
+    <div class="sec-hdr"><span class="sec-title">🏦 Minhas Contas</span><button class="btn btn-sm btn-primary" style="width:auto;" onclick="openAccountModal()">+ Nova</button></div>
+    <div id="accounts-list"><div class="skeleton"></div></div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Categorias Despesa -->
+  <div class="sec">
+    <div class="sec-hdr"><span class="sec-title">🏷️ Categorias de Despesa</span><button class="btn btn-sm btn-primary" style="width:auto;" onclick="openCatModal('expense')">+ Nova</button></div>
+    <div id="expense-cats-list"><div class="skeleton"></div></div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Categorias Receita -->
+  <div class="sec sec-last">
+    <div class="sec-hdr"><span class="sec-title">💰 Categorias de Receita</span><button class="btn btn-sm btn-primary" style="width:auto;" onclick="openCatModal('income')">+ Nova</button></div>
+    <div id="income-cats-list"><div class="skeleton"></div></div>
+  </div>
+
+</div>
+
+<!-- Bottom nav -->
+<div class="bnav-wrap">
+  <div class="bnav">
+    <a href="dashboard.html" class="ntab"><i class="ti ti-home"></i><span>Início</span></a>
+    <a href="transactions.html" class="ntab"><i class="ti ti-list"></i><span>Lançamentos</span></a>
+    <div class="ncenter"><button class="fab-nav" onclick="window.location.href='transactions.html#new'"><i class="ti ti-plus"></i></button></div>
+    <a href="cards.html" class="ntab"><i class="ti ti-credit-card"></i><span>Cartões</span></a>
+    <a href="more.html" class="ntab"><i class="ti ti-dots"></i><span>Mais</span></a>
+  </div>
+</div>
+
+<!-- Modal Nova Conta -->
+<div class="modal-overlay" id="account-modal" onclick="if(event.target===this)closeAccountModal()">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header"><span class="modal-title" id="account-modal-title">Nova Conta</span><button class="modal-close" onclick="closeAccountModal()">✕</button></div>
+    <div class="field"><label class="field-label">Nome da conta *</label><input type="text" id="acc-name" placeholder="Ex: Nubank, Inter, Carteira..."></div>
+    <div class="field">
+      <label class="field-label">Tipo</label>
+      <select id="acc-type">
+        <option value="checking">Conta Corrente</option>
+        <option value="savings">Poupança</option>
+        <option value="wallet">Carteira (dinheiro)</option>
+        <option value="investment">Investimento</option>
+        <option value="other">Outro</option>
+      </select>
+    </div>
+    <div class="field"><label class="field-label">Saldo inicial (R$)</label><input type="number" id="acc-balance" placeholder="0,00" step="0.01"></div>
+    <div class="field">
+      <label class="field-label">Cor</label>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;">
+        <div class="color-opt" style="background:#6D28D9" data-color="#6D28D9" onclick="selectColor(this)"></div>
+        <div class="color-opt" style="background:#0369A1" data-color="#0369A1" onclick="selectColor(this)"></div>
+        <div class="color-opt" style="background:#065F46" data-color="#065F46" onclick="selectColor(this)"></div>
+        <div class="color-opt" style="background:#BE185D" data-color="#BE185D" onclick="selectColor(this)"></div>
+        <div class="color-opt" style="background:#C2410C" data-color="#C2410C" onclick="selectColor(this)"></div>
+        <div class="color-opt" style="background:#1D4ED8" data-color="#1D4ED8" onclick="selectColor(this)"></div>
+        <div class="color-opt" style="background:#6B7280" data-color="#6B7280" onclick="selectColor(this)"></div>
+      </div>
+      <input type="hidden" id="acc-color" value="#6D28D9">
+    </div>
+    <button class="btn btn-primary" id="acc-save-btn" onclick="saveAccount()">Salvar Conta</button>
+  </div>
+</div>
+
+<!-- Modal Nova Categoria -->
+<div class="modal-overlay" id="cat-modal" onclick="if(event.target===this)closeCatModal()">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header"><span class="modal-title" id="cat-modal-title">Nova Categoria</span><button class="modal-close" onclick="closeCatModal()">✕</button></div>
+    <input type="hidden" id="cat-type" value="expense">
+    <div class="field"><label class="field-label">Nome *</label><input type="text" id="cat-name" placeholder="Ex: Alimentação, Salário..."></div>
+    <div class="field"><label class="field-label">Subcategoria</label><input type="text" id="cat-sub" placeholder="Ex: Mercado, Restaurante..."></div>
+    <div class="field">
+      <label class="field-label">Ícone</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;" id="icon-picker">
+        🛒🍽️🚗🚌⛽🏠🏢💡💧📱🎬🎮✈️🏥💊📚🎓💼💰📈🎁🐾👔👟🍺🏋️💇🐶
+      </div>
+      <input type="hidden" id="cat-icon" value="💰">
+    </div>
+    <div class="field">
+      <label class="field-label">Cor</label>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;">
+        <div class="color-opt cat-color" style="background:#F59E0B" data-color="#F59E0B" onclick="selectCatColor(this)"></div>
+        <div class="color-opt cat-color" style="background:#EF4444" data-color="#EF4444" onclick="selectCatColor(this)"></div>
+        <div class="color-opt cat-color" style="background:#8B5CF6" data-color="#8B5CF6" onclick="selectCatColor(this)"></div>
+        <div class="color-opt cat-color" style="background:#3B82F6" data-color="#3B82F6" onclick="selectCatColor(this)"></div>
+        <div class="color-opt cat-color" style="background:#10B981" data-color="#10B981" onclick="selectCatColor(this)"></div>
+        <div class="color-opt cat-color" style="background:#EC4899" data-color="#EC4899" onclick="selectCatColor(this)"></div>
+        <div class="color-opt cat-color" style="background:#F97316" data-color="#F97316" onclick="selectCatColor(this)"></div>
+        <div class="color-opt cat-color" style="background:#06B6D4" data-color="#06B6D4" onclick="selectCatColor(this)"></div>
+      </div>
+      <input type="hidden" id="cat-color" value="#F59E0B">
+    </div>
+    <div class="field"><label class="field-label">Limite mensal (R$)</label><input type="number" id="cat-limit" placeholder="0 = sem limite" step="0.01"></div>
+    <button class="btn btn-primary" id="cat-save-btn" onclick="saveCategory()">Salvar Categoria</button>
+  </div>
+</div>
+
+<style>
+.color-opt { width:32px;height:32px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:all 0.15s; }
+.color-opt.selected { border-color:#fff;box-shadow:0 0 0 2px var(--accent); }
+#icon-picker { font-size:22px;gap:6px; }
+.icon-opt { cursor:pointer;padding:4px;border-radius:8px;border:2px solid transparent;transition:all 0.15s; }
+.icon-opt.selected { background:var(--accent-light);border-color:var(--accent-2); }
+</style>
+
+<script src="../js/config.js"></script>
+<script src="../js/api.js"></script>
+<script src="../js/utils.js"></script>
+<script>
+  if (!Auth.requireAuth()) throw '';
+  applyTheme();
+
+  const user = Auth.getUser();
+  if (user) {
+    document.getElementById('profile-name').textContent = user.name;
+    document.getElementById('profile-email').textContent = user.email;
+    document.getElementById('profile-avatar').textContent = user.name.split(' ').map(n=>n[0]).slice(0,2).join('');
+  }
+
+  // Build icon picker
+  const icons = ['🛒','🍽️','🚗','🚌','⛽','🏠','🏢','💡','💧','📱','🎬','🎮','✈️','🏥','💊','📚','🎓','💼','💰','📈','🎁','🐾','👔','👟','🍺','🏋️','💇','🐶','🔧','🎵'];
+  document.getElementById('icon-picker').innerHTML = icons.map(i => `<span class="icon-opt" onclick="selectIcon(this,'${i}')">${i}</span>`).join('');
+
+  function selectIcon(el, icon) {
+    document.querySelectorAll('.icon-opt').forEach(e=>e.classList.remove('selected'));
+    el.classList.add('selected');
+    document.getElementById('cat-icon').value = icon;
+  }
+
+  function selectColor(el) {
+    document.querySelectorAll('.color-opt:not(.cat-color)').forEach(e=>e.classList.remove('selected'));
+    el.classList.add('selected');
+    document.getElementById('acc-color').value = el.dataset.color;
+  }
+  function selectCatColor(el) {
+    document.querySelectorAll('.cat-color').forEach(e=>e.classList.remove('selected'));
+    el.classList.add('selected');
+    document.getElementById('cat-color').value = el.dataset.color;
+  }
+
+  // Init first color selected
+  document.querySelector('.color-opt:not(.cat-color)')?.classList.add('selected');
+  document.querySelector('.cat-color')?.classList.add('selected');
+
+  async function loadAccounts() {
+    const res = await API.listAccounts();
+    const accounts = res.success ? res.data : [];
+    const ACC = ['ac-purple','ac-blue','ac-green','ac-pink','ac-orange'];
+    const typeLabel = {checking:'Conta corrente',savings:'Poupança',wallet:'Carteira',investment:'Investimento',other:'Outro'};
+    if (accounts.length === 0) {
+      document.getElementById('accounts-list').innerHTML = '<p class="text-muted text-xs" style="padding:8px 0;">Nenhuma conta. Crie a primeira!</p>';
+      return;
+    }
+    document.getElementById('accounts-list').innerHTML = accounts.map((a,i) => `
+      <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:0.5px solid var(--border);">
+        <div style="width:40px;height:40px;border-radius:12px;background:${a.color||'#6D28D9'};display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">🏦</div>
+        <div style="flex:1;">
+          <p style="font-size:13px;font-weight:600;color:var(--text);">${a.name}</p>
+          <p style="font-size:10px;color:var(--text-3);">${typeLabel[a.type]||a.type}</p>
+        </div>
+        <p style="font-size:13px;font-weight:700;color:${Number(a.current_balance)>=0?'var(--green)':'var(--red)'};">${Utils.formatCurrency(a.current_balance)}</p>
+      </div>`).join('');
+  }
+
+  async function loadCategories() {
+    const res = await API.listCategories();
+    const cats = res.success ? res.data : [];
+    const expense = cats.filter(c=>c.type==='expense');
+    const income = cats.filter(c=>c.type==='income');
+
+    const renderCat = c => `
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:0.5px solid var(--border);">
+        <div style="width:34px;height:34px;border-radius:10px;background:${c.color}22;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">${c.icon||'💰'}</div>
+        <div style="flex:1;">
+          <p style="font-size:12px;font-weight:600;color:var(--text);">${c.name}${c.subcategory?' · <span style="font-weight:400;color:var(--text-3);">'+c.subcategory+'</span>':''}</p>
+          ${Number(c.budget_limit)>0?`<p style="font-size:10px;color:var(--text-3);">Limite: ${Utils.formatCurrency(c.budget_limit)}</p>`:''}
+        </div>
+        <div style="width:8px;height:8px;border-radius:50%;background:${c.color};flex-shrink:0;"></div>
+      </div>`;
+
+    document.getElementById('expense-cats-list').innerHTML = expense.length > 0 ? expense.map(renderCat).join('') : '<p class="text-muted text-xs" style="padding:8px 0;">Nenhuma categoria de despesa.</p>';
+    document.getElementById('income-cats-list').innerHTML = income.length > 0 ? income.map(renderCat).join('') : '<p class="text-muted text-xs" style="padding:8px 0;">Nenhuma categoria de receita.</p>';
+  }
+
+  function openAccountModal() { document.getElementById('account-modal').classList.add('open'); }
+  function closeAccountModal() { document.getElementById('account-modal').classList.remove('open'); }
+
+  function openCatModal(type) {
+    document.getElementById('cat-type').value = type;
+    document.getElementById('cat-modal-title').textContent = type === 'expense' ? 'Nova Categoria de Despesa' : 'Nova Categoria de Receita';
+    document.getElementById('cat-modal').classList.add('open');
+  }
+  function closeCatModal() { document.getElementById('cat-modal').classList.remove('open'); }
+
+  async function saveAccount() {
+    const name = document.getElementById('acc-name').value.trim();
+    if (!name) { Utils.toast('Digite o nome da conta','error'); return; }
+    const btn = document.getElementById('acc-save-btn');
+    btn.disabled = true; btn.textContent = 'Salvando...';
+    const res = await API.createAccount({
+      name,
+      type: document.getElementById('acc-type').value,
+      initial_balance: parseFloat(document.getElementById('acc-balance').value) || 0,
+      color: document.getElementById('acc-color').value
+    });
+    btn.disabled = false; btn.textContent = 'Salvar Conta';
+    if (res.success) { Utils.toast('✅ Conta criada!'); closeAccountModal(); document.getElementById('acc-name').value=''; document.getElementById('acc-balance').value=''; loadAccounts(); }
+    else Utils.toast(res.error||'Erro','error');
+  }
+
+  async function saveCategory() {
+    const name = document.getElementById('cat-name').value.trim();
+    if (!name) { Utils.toast('Digite o nome da categoria','error'); return; }
+    const btn = document.getElementById('cat-save-btn');
+    btn.disabled = true; btn.textContent = 'Salvando...';
+    const res = await API.createCategory({
+      name,
+      subcategory: document.getElementById('cat-sub').value.trim(),
+      type: document.getElementById('cat-type').value,
+      icon: document.getElementById('cat-icon').value,
+      color: document.getElementById('cat-color').value,
+      budget_limit: parseFloat(document.getElementById('cat-limit').value) || 0
+    });
+    btn.disabled = false; btn.textContent = 'Salvar Categoria';
+    if (res.success) { Utils.toast('✅ Categoria criada!'); closeCatModal(); ['cat-name','cat-sub','cat-limit'].forEach(id=>document.getElementById(id).value=''); loadCategories(); }
+    else Utils.toast(res.error||'Erro','error');
+  }
+
+  loadAccounts();
+  loadCategories();
+</script>
+</body>
+</html>
