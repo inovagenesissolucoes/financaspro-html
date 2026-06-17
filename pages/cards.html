@@ -12,13 +12,17 @@
 
   <div class="page-hero">
     <div class="page-hero-row">
-      <div style="display:flex;align-items:center;gap:10px;">
-        <a href="dashboard.html" class="back-btn">‹</a>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <button class="menu-btn" onclick="openDrawer()"><i class="ti ti-menu-2"></i></button>
         <div>
           <h1 class="page-hero-title">Cartões</h1>
           <p class="page-hero-sub">Gerencie seus cartões e faturas</p>
         </div>
       </div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        
+      </div>
+    </div>
       <button class="menu-btn" onclick="openDrawer()"><i class="ti ti-menu-2"></i></button>
     </div>
   </div>
@@ -40,6 +44,7 @@
   </div>
 </div>
 
+<!-- Modal novo cartão -->
 <div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)closeModal()">
   <div class="modal">
     <div class="modal-handle"></div>
@@ -55,6 +60,7 @@
   </div>
 </div>
 
+<!-- Modal compra no cartão -->
 <div class="modal-overlay" id="purchase-modal" onclick="if(event.target===this)closePurchaseModal()">
   <div class="modal">
     <div class="modal-handle"></div>
@@ -83,9 +89,11 @@
   async function load() {
     const [cardsRes, catRes] = await Promise.all([API.listCards(), API.listCategories()]);
     categories = catRes.success ? catRes.data.filter(c=>c.type==='expense') : [];
-    document.getElementById('p-category').innerHTML = '<option value="">Sem categoria</option>' + categories.map(c=>`<option value="${c.category_id}">${c.icon||''} ${c.name}</option>`).join('');
+    const cs = document.getElementById('p-category');
+    cs.innerHTML = '<option value="">Sem categoria</option>' + categories.map(c=>`<option value="${c.category_id}">${c.icon||''} ${c.name}</option>`).join('');
 
     const cards = cardsRes.success ? cardsRes.data : [];
+
     if (cards.length === 0) {
       document.getElementById('list-container').innerHTML = `
         <div class="empty-state">
@@ -103,6 +111,7 @@
       const available = Math.max(0, limit - used);
       const pct = limit > 0 ? Math.min(100, Math.round((used/limit)*100)) : 0;
       const statusLabel = inv ? (inv.status==='closed' ? '🔒 Fechada' : '🔓 Aberta') : '🔓 Aberta';
+
       return `
         <div class="cccard ${CC_CLASSES[i%CC_CLASSES.length]}">
           <div class="cc-top">
@@ -121,7 +130,7 @@
             </div>
             <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
               <button class="cc-pay-btn" onclick="openPurchaseModal('${card.card_id}')">+ Compra</button>
-              ${inv && inv.status==='closed' ? `<button class="cc-pay-btn" style="background:rgba(253,224,71,0.25);" onclick="payInvoice('${inv.invoice_id}',${inv.total_amount})">Pagar fatura</button>` : ''}
+              ${inv && inv.status==='closed' ? `<button class="cc-pay-btn" style="background:rgba(253,224,71,0.25);border-color:rgba(253,224,71,0.5);" onclick="payInvoice('${inv.invoice_id}',${inv.total_amount})">Pagar fatura</button>` : ''}
             </div>
           </div>
         </div>`;
