@@ -87,14 +87,13 @@
   const ACC_CLASSES = ['ac-purple','ac-blue','ac-green','ac-pink','ac-orange'];
   const typeLabel = {checking:'Conta corrente',savings:'Poupança',wallet:'Carteira',investment:'Investimento',other:'Conta'};
 
-  // Auto-gerar recorrências do mês ao abrir
   async function autoGenerateRecurrences() {
-    const key = 'fp_generated_' + Utils.getActiveMonth();
-    if (localStorage.getItem(key)) return; // já gerou este mês
-    const res = await API.generateMonth(Utils.getActiveMonth());
-    if (res.success && (res.data?.count > 0 || res.count > 0)) {
-      const count = res.data?.count || res.count || 0;
-      if (count > 0) Utils.toast(`🔄 ${count} recorrência(s) gerada(s) automaticamente!`);
+    const key = 'fp_generated_' + Utils.currentMonth();
+    if (localStorage.getItem(key)) return;
+    const res = await API.generateMonth(Utils.currentMonth());
+    if (res.success) {
+      const count = res.data?.count || 0;
+      if (count > 0) Utils.toast(`🔄 ${count} recorrência(s) gerada(s)!`);
     }
     localStorage.setItem(key, '1');
   }
@@ -102,12 +101,18 @@
   async function load() {
     const user = Auth.getUser();
     document.getElementById('user-name').textContent = (user?.name?.split(' ')[0]||'') + ' 👋';
-    document.getElementById('hero-sub').textContent = Utils.formatMonth(Utils.getActiveMonth());
 
-    // Gerar recorrências automaticamente
+    // Sempre usa o mês atual real, não o mês selecionado nos lançamentos
+    const currentMonth = Utils.currentMonth();
+    document.getElementById('hero-sub').textContent = Utils.formatMonth(currentMonth);
+
     autoGenerateRecurrences();
 
-    const [sumRes, catRes] = await Promise.all([API.getDashboard(Utils.getActiveMonth()), API.getCategoryBreakdown(Utils.getActiveMonth())]);
+    const [sumRes, catRes] = await Promise.all([
+      API.getDashboard(currentMonth),
+      API.getCategoryBreakdown(currentMonth)
+    ]);
+
     if (!sumRes.success) return;
     const s = sumRes.data;
 
@@ -117,10 +122,10 @@
     document.getElementById('commitment-rate').textContent = s.commitment_rate + '%';
     document.getElementById('income-paid').textContent     = Utils.formatCurrency(s.income.paid);
     document.getElementById('expense-paid').textContent    = Utils.formatCurrency(s.expense.paid);
-    document.getElementById('net-balance').textContent     = Utils.formatCurrency(s.net);
+    document.getElementById('net-balance').textContent     = Utils.formatCurrency(s.total_balance - s.expense.pending);
     document.getElementById('overdue-count').textContent   = s.overdue_count + (s.overdue_count===1?' conta':' contas');
 
-    if (s.overdue_count>0) {
+    if (s.overdue_count > 0) {
       document.getElementById('overdue-alert').innerHTML = `
         <div class="alert-banner alert-danger">
           <span class="alert-icon">🚨</span>
@@ -129,10 +134,12 @@
             <div class="alert-sub">${Utils.formatCurrency(s.overdue_amount)} em atraso</div>
           </div>
         </div>`;
+    } else {
+      document.getElementById('overdue-alert').innerHTML = '';
     }
 
-    if (s.accounts?.length>0) {
-      document.getElementById('accounts-list').innerHTML = s.accounts.map((a,i)=>`
+    if (s.accounts?.length > 0) {
+      document.getElementById('accounts-list').innerHTML = s.accounts.map((a,i) => `
         <div class="acc-card ${ACC_CLASSES[i%ACC_CLASSES.length]}">
           <div class="acc-emoji">🏦</div>
           <div class="acc-name">${a.name}</div>
@@ -144,9 +151,9 @@
     }
 
     const cats = catRes.success ? catRes.data : [];
-    if (cats.length>0) {
-      const max = cats[0].total||1;
-      document.getElementById('cat-list').innerHTML = cats.slice(0,5).map((c,i)=>`
+    if (cats.length > 0) {
+      const max = cats[0].total || 1;
+      document.getElementById('cat-list').innerHTML = cats.slice(0,5).map((c,i) => `
         <div class="cat-row">
           <div class="cat-icon" style="background:${c.color||COLORS[i%COLORS.length]}22;">${c.icon||'💰'}</div>
           <div class="cat-body">
