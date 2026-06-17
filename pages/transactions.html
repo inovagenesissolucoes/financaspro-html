@@ -192,7 +192,7 @@
   injectNav('transactions.html');
 
   let month = Utils.getActiveMonth(), activeTab = 'all';
-  let allTx = [], categories = [], accounts = [], cards = [];
+  let allTx = [], categories = [], accounts = [], cards = [], recurrences = [];
   let txType = 'expense', recType = 'expense';
 
   function changeMonth(d) { month = Utils.addMonths(month, d); Utils.setActiveMonth(month); load(); }
@@ -209,20 +209,61 @@
   async function load() {
     document.getElementById('month-label').textContent = Utils.formatMonth(month);
     document.getElementById('list-container').innerHTML = '<div style="padding:0 14px;"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>';
-    const [txRes,catRes,accRes,cardRes] = await Promise.all([API.listTransactions({month}),API.listCategories(),API.listAccounts(),API.listCards()]);
-    allTx=txRes.success?txRes.data:[]; categories=catRes.success?catRes.data:[]; accounts=accRes.success?accRes.data:[]; cards=cardRes.success?cardRes.data:[];
-    const income=allTx.filter(t=>t.type==='income'&&t.status!=='cancelled');
-    const expense=allTx.filter(t=>t.type==='expense'&&t.status!=='cancelled');
+
+    const [txRes,catRes,accRes,cardRes,recRes] = await Promise.all([
+      API.listTransactions({month}),
+      API.listCategories(),
+      API.listAccounts(),
+      API.listCards(),
+      API.listRecurrences()
+    ]);
+
+    allTx = txRes.success ? txRes.data : [];
+    categories = catRes.success ? catRes.data : [];
+    accounts = accRes.success ? accRes.data : [];
+    cards = cardRes.success ? cardRes.data : [];
+    recurrences = recRes.success ? recRes.data : [];
+
+    // Injeta recorrências virtuais para meses >= mês atual sem lançamento gerado
+    const currentMonth = Utils.currentMonth();
+    if (month >= currentMonth) {
+      recurrences.forEach(rec => {
+        const already = allTx.some(t =>
+          t.recurring_id === rec.recurrence_id &&
+          String(t.due_date).startsWith(month)
+        );
+        if (already) return;
+        const day = String(rec.recurrence_day).padStart(2,'0');
+        allTx.push({
+          transaction_id: 'virtual_' + rec.recurrence_id + '_' + month,
+          type: rec.type,
+          description: rec.description,
+          expected_amount: rec.expected_amount,
+          category_id: rec.category_id,
+          account_id: '',
+          card_id: '',
+          due_date: `${month}-${day}`,
+          status: 'pending',
+          is_recurring: true,
+          recurring_id: rec.recurrence_id,
+          _virtual: true,
+          _rec: rec
+        });
+      });
+    }
+
+    const income = allTx.filter(t=>t.type==='income'&&t.status!=='cancelled');
+    const expense = allTx.filter(t=>t.type==='expense'&&t.status!=='cancelled');
     document.getElementById('ph-income').textContent=Utils.formatCurrency(income.reduce((s,t)=>s+Number(t.expected_amount||0),0));
     document.getElementById('ph-expense').textContent=Utils.formatCurrency(expense.reduce((s,t)=>s+Number(t.expected_amount||0),0));
     document.getElementById('ph-net').textContent=Utils.formatCurrency(income.reduce((s,t)=>s+Number(t.expected_amount||0),0)-expense.reduce((s,t)=>s+Number(t.expected_amount||0),0));
     renderList();
   }
 
-  function isRecurring(tx) { return tx.is_recurring==true||tx.is_recurring==='TRUE'; }
+  function isRecurring(tx) { return tx.is_recurring==true||tx.is_recurring==='TRUE'||tx._virtual; }
 
   function renderList() {
-    let f=allTx.filter(t=>t.status!=='cancelled');
+    let f = allTx.filter(t=>t.status!=='cancelled');
     if (activeTab==='income') f=f.filter(t=>t.type==='income');
     if (activeTab==='expense') f=f.filter(t=>t.type==='expense');
     if (f.length===0) { document.getElementById('list-container').innerHTML=`<div class="empty-state"><div class="empty-icon">📭</div><p class="empty-text">Nenhum lançamento encontrado</p><button class="btn btn-primary" style="max-width:200px;margin:0 auto;" onclick="openTypeSelector()">Adicionar</button></div>`; return; }
@@ -244,8 +285,12 @@
     const acc=accounts.find(a=>a.account_id===tx.account_id);
     const card=cards.find(c=>c.card_id===tx.card_id);
     const icon=cat?.icon||(tx.card_id?'💳':tx.type==='income'?'💼':'💰');
-    const sub=[cat?.name+(cat?.subcategory?' · '+cat.subcategory:''), acc?.name||card?.name].filter(Boolean).join(' · ');
-    const badge=tx.status==='paid'?`<span class="badge b-paid">${tx.type==='income'?'✓ Recebido':'✓ Pago'}</span>`:overdue?'<span class="badge b-over">⚠ Vencida</span>':`<span class="badge b-pend">Vence ${Utils.formatDate(tx.due_date)}</span>`;
+    const sub=[cat?.name+(cat?.subcategory?' · '+cat.subcategory:''),acc?.name||card?.name].filter(Boolean).join(' · ');
+    const virtualTag=tx._virtual?'<span class="badge" style="background:var(--accent-light);color:var(--accent-2);margin-left:4px;">🔄 Fixo</span>':'';
+    const badge=tx.status==='paid'
+      ?`<span class="badge b-paid">${tx.type==='income'?'✓ Recebido':'✓ Pago'}</span>`
+      :overdue?'<span class="badge b-over">⚠ Vencida</span>'
+      :`<span class="badge b-pend">Vence ${Utils.formatDate(tx.due_date)}</span>`;
     const instTag=tx.installment_number?`<span class="badge" style="background:#FEF3C7;color:#92400E;margin-left:4px;">📌 ${tx.installment_number}ª parc.</span>`:'';
     let amtHtml='';
     if (tx.status==='paid'&&tx.actual_amount&&Math.abs(Number(tx.actual_amount)-Number(tx.expected_amount))>0.01) {
@@ -257,8 +302,28 @@
       const amt=tx.status==='paid'?Number(tx.actual_amount||tx.expected_amount):Number(tx.expected_amount);
       amtHtml=`<div class="tx-amt ${tx.type==='income'?'tx-pos':'tx-neg'}">${tx.type==='income'?'+':'-'}${Utils.formatCurrency(amt)}</div>`;
     }
-    const payBtn=tx.status==='pending'?`<button class="pay-btn" onclick="openPayModal('${tx.transaction_id}','${tx.account_id||''}',${tx.expected_amount},'${tx.type}','${tx.description.replace(/'/g,"\\'")}')">${tx.type==='income'?'Confirmar':'Pagar'}</button>`:'';
-    return `<div class="tx-card ${overdue&&tx.status!=='paid'?'overdue':''}"><div class="tx-ico" style="background:${(cat?.color||'#6366F1')}22;">${icon}</div><div class="tx-body"><div class="tx-name">${tx.description}</div><div class="tx-cat">${sub}</div><div>${badge}${instTag}</div></div><div class="tx-right">${amtHtml}${payBtn}</div></div>`;
+    let payBtn='';
+    if (tx.status==='pending') {
+      if (tx._virtual) {
+        const rec=tx._rec;
+        payBtn=`<button class="pay-btn" onclick="payVirtual('${rec.recurrence_id}','${tx.due_date}','${rec.type}','${rec.description.replace(/'/g,"\\'")}',${rec.expected_amount},'${rec.category_id||''}')">${tx.type==='income'?'Confirmar':'Pagar'}</button>`;
+      } else {
+        payBtn=`<button class="pay-btn" onclick="openPayModal('${tx.transaction_id}','${tx.account_id||''}',${tx.expected_amount},'${tx.type}','${tx.description.replace(/'/g,"\\'")}')">${tx.type==='income'?'Confirmar':'Pagar'}</button>`;
+      }
+    }
+    return `<div class="tx-card ${overdue&&tx.status!=='paid'?'overdue':''}"><div class="tx-ico" style="background:${(cat?.color||'#6366F1')}22;">${icon}</div><div class="tx-body"><div class="tx-name">${tx.description}</div><div class="tx-cat">${sub}</div><div>${badge}${virtualTag}${instTag}</div></div><div class="tx-right">${amtHtml}${payBtn}</div></div>`;
+  }
+
+  async function payVirtual(recId,dueDate,type,desc,amount,catId) {
+    const btn=event.target; btn.disabled=true; btn.textContent='...';
+    const currentMonth=Utils.currentMonth();
+    const rec=recurrences.find(r=>r.recurrence_id===recId);
+    const day=String(rec?.recurrence_day||1).padStart(2,'0');
+    const realDueDate=`${currentMonth}-${day}`;
+    const res=await API.createTransaction({type,description:desc,expected_amount:amount,due_date:realDueDate,category_id:catId,account_id:'',is_recurring:true,recurring_id:recId,status:'pending'});
+    btn.disabled=false; btn.textContent=type==='income'?'Confirmar':'Pagar';
+    if (res.success) { await load(); openPayModal(res.data.transaction_id,'',amount,type,desc); }
+    else Utils.toast(res.error||'Erro','error');
   }
 
   function openPayModal(txId,accountId,expected,type,name) {
@@ -360,10 +425,16 @@
     const notes=document.getElementById('tr-notes').value;
     const btn=document.getElementById('tr-save-btn'); btn.disabled=true; btn.textContent='Transferindo...';
     const fromName=accounts.find(a=>a.account_id===fromId)?.name||'origem',toName=accounts.find(a=>a.account_id===toId)?.name||'destino';
-    const [r1,r2]=await Promise.all([API.createTransaction({type:'expense',description:`Transferência → ${toName}`,expected_amount:amount,due_date:date,account_id:fromId,notes}),API.createTransaction({type:'income',description:`Transferência ← ${fromName}`,expected_amount:amount,due_date:date,account_id:toId,notes})]);
+    const [r1,r2]=await Promise.all([
+      API.createTransaction({type:'expense',description:`Transferência → ${toName}`,expected_amount:amount,due_date:date,account_id:fromId,notes}),
+      API.createTransaction({type:'income',description:`Transferência ← ${fromName}`,expected_amount:amount,due_date:date,account_id:toId,notes})
+    ]);
     btn.disabled=false; btn.textContent='Transferir';
     if (r1.success&&r2.success) {
-      await Promise.all([API.markPaid({transaction_id:r1.data.transaction_id,account_id:fromId,paid_date:date,actual_amount:amount}),API.markPaid({transaction_id:r2.data.transaction_id,account_id:toId,paid_date:date,actual_amount:amount})]);
+      await Promise.all([
+        API.markPaid({transaction_id:r1.data.transaction_id,account_id:fromId,paid_date:date,actual_amount:amount}),
+        API.markPaid({transaction_id:r2.data.transaction_id,account_id:toId,paid_date:date,actual_amount:amount})
+      ]);
       Utils.toast('✅ Transferência realizada!'); closeTransferModal(); ['tr-amount','tr-notes'].forEach(id=>document.getElementById(id).value=''); load();
     } else Utils.toast('Erro ao transferir','error');
   }
@@ -381,9 +452,11 @@
     const desc=document.getElementById('rec-desc').value.trim(),amount=parseFloat(document.getElementById('rec-amount').value),day=parseInt(document.getElementById('rec-day').value);
     if (!desc||!amount||!day) { Utils.toast('Preencha descrição, valor e dia','error'); return; }
     const btn=document.getElementById('rec-save-btn'); btn.disabled=true; btn.textContent='Salvando...';
+    const currentMonth=Utils.currentMonth();
     const res=await API.createRecurrence({description:desc,type:recType,expected_amount:amount,recurrence_day:day,category_id:document.getElementById('rec-category').value,account_id:'',start_date:new Date().toISOString().split('T')[0]});
     btn.disabled=false; btn.textContent='Salvar Recorrência';
-    if (res.success) { await API.generateMonth(month); Utils.toast('✅ Recorrência salva!'); closeRecurrenceModal(); ['rec-desc','rec-amount','rec-day'].forEach(id=>document.getElementById(id).value=''); load(); } else Utils.toast(res.error||'Erro','error');
+    if (res.success) { await API.generateMonth(currentMonth); Utils.toast('✅ Recorrência salva!'); closeRecurrenceModal(); ['rec-desc','rec-amount','rec-day'].forEach(id=>document.getElementById(id).value=''); load(); }
+    else Utils.toast(res.error||'Erro','error');
   }
 
   function checkRetroactive() {
@@ -424,7 +497,15 @@
     const btn=document.getElementById('d-save-btn'); btn.disabled=true; btn.textContent=`Criando ${totalInstall} parcelas...`;
     const res=await API.createDebt({description:desc,original_amount:parseFloat(document.getElementById('d-original').value)||(totalInstall*installAmt),total_installments:totalInstall,installment_amount:installAmt,first_due_date:firstDate,last_paid_month:lastPaid,category_id:document.getElementById('d-category').value,account_id:accountId,card_id:cardId});
     btn.disabled=false; btn.textContent='Criar Parcelas';
-    if (res.success) { const paidCount=res.data?.paid_count||0; Utils.toast(`✅ ${totalInstall} parcelas criadas!${paidCount>0?' '+paidCount+' como histórico.':''}`); closeDebtModal(); ['d-desc','d-original','d-total','d-install','d-last-paid'].forEach(id=>document.getElementById(id).value=''); document.getElementById('debt-preview').style.display='none'; document.getElementById('retroactive-section').style.display='none'; load(); } else Utils.toast(res.error||'Erro','error');
+    if (res.success) {
+      const paidCount=res.data?.paid_count||0;
+      Utils.toast(`✅ ${totalInstall} parcelas criadas!${paidCount>0?' '+paidCount+' como histórico.':''}`);
+      closeDebtModal();
+      ['d-desc','d-original','d-total','d-install','d-last-paid'].forEach(id=>document.getElementById(id).value='');
+      document.getElementById('debt-preview').style.display='none';
+      document.getElementById('retroactive-section').style.display='none';
+      load();
+    } else Utils.toast(res.error||'Erro','error');
   }
 
   if (window.location.hash==='#new') setTimeout(openTypeSelector,300);
