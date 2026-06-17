@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>FinançasPRO — Cartões</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<div class="page pt-safe">
+
+  <div class="flex items-center justify-between mb-4">
+    <h1>Cartões de Crédito</h1>
+  </div>
+
+  <div id="list-container">
+    <div class="skeleton" style="height:140px"></div>
+    <div class="skeleton" style="height:140px"></div>
+  </div>
+
+</div>
+
+<button class="fab" onclick="openModal()">+</button>
+
+<!-- Modal novo cartão -->
+<div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Novo Cartão</h2>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+
+    <div class="field">
+      <label class="field-label">Nome do cartão *</label>
+      <input type="text" id="c-name" placeholder="Ex: Nubank, Itaú Visa...">
+    </div>
+    <div class="field">
+      <label class="field-label">Limite total (R$)</label>
+      <input type="number" id="c-limit" placeholder="5000" step="0.01" min="0">
+    </div>
+    <div class="grid-2">
+      <div class="field">
+        <label class="field-label">Dia de fechamento</label>
+        <input type="number" id="c-closing" placeholder="10" min="1" max="31">
+      </div>
+      <div class="field">
+        <label class="field-label">Dia de vencimento</label>
+        <input type="number" id="c-due" placeholder="17" min="1" max="31">
+      </div>
+    </div>
+    <div class="field">
+      <label class="field-label">Cor</label>
+      <input type="color" id="c-color" value="#6366F1" style="height:48px;cursor:pointer;">
+    </div>
+
+    <button class="btn btn-primary" id="save-btn" onclick="saveCard()">Adicionar Cartão</button>
+  </div>
+</div>
+
+<script src="../js/config.js"></script>
+<script src="../js/api.js"></script>
+<script src="../js/utils.js"></script>
+<script src="../js/nav.js"></script>
+<script>
+  if (!Auth.requireAuth()) throw new Error('redirect');
+  renderNav('cards.html');
+
+  async function load() {
+    const [cardsRes, invRes] = await Promise.all([
+      API.listCards(),
+      API.call('invoices.list', {})
+    ]);
+
+    const cards = cardsRes.success ? cardsRes.data : [];
+    const invoices = invRes.success ? invRes.data : [];
+
+    if (cards.length === 0) {
+      document.getElementById('list-container').innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">💳</div>
+          <p class="empty-text" style="margin-bottom:16px;">Nenhum cartão cadastrado</p>
+          <button class="btn btn-primary" style="max-width:200px;margin:0 auto;" onclick="openModal()">Adicionar cartão</button>
+        </div>`;
+      return;
+    }
+
+    const currentMonth = Utils.currentMonth();
+
+    document.getElementById('list-container').innerHTML = cards.map(card => {
+      const limit = Number(card.limit_amount) || 0;
+      const cardInvoices = invoices.filter(i => i.card_id === card.card_id);
+      const currentInv = cardInvoices.find(i => i.reference_month === currentMonth);
+      const used = Number(currentInv?.total_amount) || 0;
+      const available = Math.max(0, limit - used);
+      const usagePercent = limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 0;
+      const usageColor = usagePercent > 80 ? 'var(--red)' : usagePercent > 50 ? 'var(--yellow)' : 'var(--green)';
+
+      const openInvoices = cardInvoices.filter(i => i.status === 'open' || i.status === 'closed');
+      const paidInvoices = cardInvoices.filter(i => i.status === 'paid');
+
+      return `
+        <div class="card card-lg mb-4" style="border-left:4px solid ${card.color || 'var(--accent)'}">
+          <div class="flex justify-between items-start mb-3">
+            <div>
+              <p class="font-semibold">${card.name}</p>
+              <p class="text-xs text-muted">Fecha dia ${card.closing_day} · Vence dia ${card.due_day}</p>
+            </div>
+            <span style="font-size:1.8rem;">💳</span>
+          </div>
+
+          <!-- Limit bar -->
+          <div class="flex justify-between text-xs mb-1">
+            <span class="text-muted">Usado: ${Utils.formatCurrency(used)}</span>
+            <span class="text-muted">Limite: ${Utils.formatCurrency(limit)}</span>
+          </div>
+          <div class="progress-track mb-1">
+            <div class="progress-fill" style="width:${usagePercent}%;background:${usageColor}"></div>
+          </div>
+          <p class="text-xs mb-3" style="color:${usageColor};">${usagePercent}% utilizado · ${Utils.formatCurrency(available)} disponível</p>
+
+          <!-- Invoices -->
+          ${openInvoices.length > 0 ? `
+            <p class="text-xs font-semibold text-muted mb-2">FATURAS ABERTAS</p>
+            ${openInvoices.map(inv => `
+              <div class="flex justify-between items-center mb-2" style="padding:10px;background:var(--bg-input);border-radius:10px;">
+                <div>
+                  <p class="text-sm font-medium">${Utils.formatMonth(inv.reference_month)}</p>
+                  <p class="text-xs text-muted">Vence ${Utils.formatDate(inv.due_date)} · ${inv.status === 'closed' ? '🔒 Fechada' : '🔓 Aberta'}</p>
+                </div>
+                <div style="text-align:right">
+                  <p class="font-bold text-red">${Utils.formatCurrency(inv.total_amount)}</p>
+                  ${inv.status === 'closed' ? `<button class="tx-status-btn" onclick="payInvoice('${inv.invoice_id}', ${inv.total_amount})">Pagar</button>` : ''}
+                </div>
+              </div>
+            `).join('')}
+          ` : ''}
+
+          ${paidInvoices.length > 0 ? `
+            <p class="text-xs font-semibold text-muted mb-2 mt-2">HISTÓRICO</p>
+            ${paidInvoices.slice(0, 3).map(inv => `
+              <div class="flex justify-between items-center mb-1">
+                <span class="text-xs text-muted">${Utils.formatMonth(inv.reference_month)}</span>
+                <span class="text-xs font-medium text-green">✅ ${Utils.formatCurrency(inv.paid_amount || inv.total_amount)}</span>
+              </div>
+            `).join('')}
+          ` : ''}
+        </div>
+      `;
+    }).join('');
+  }
+
+  async function payInvoice(invoiceId, amount) {
+    const res = await API.call('invoices.markPaid', {
+      invoice_id: invoiceId,
+      paid_date: new Date().toISOString().split('T')[0],
+      paid_amount: amount
+    });
+    if (res.success) { Utils.toast('Fatura paga! ✅'); load(); }
+    else Utils.toast(res.error || 'Erro', 'error');
+  }
+
+  function openModal() { document.getElementById('modal-overlay').classList.add('open'); }
+  function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
+
+  async function saveCard() {
+    const name = document.getElementById('c-name').value.trim();
+    if (!name) { Utils.toast('Digite o nome do cartão', 'error'); return; }
+
+    const btn = document.getElementById('save-btn');
+    btn.disabled = true; btn.textContent = 'Salvando...';
+
+    const res = await API.createCard({
+      name,
+      limit_amount: parseFloat(document.getElementById('c-limit').value) || 0,
+      closing_day: parseInt(document.getElementById('c-closing').value) || 1,
+      due_day: parseInt(document.getElementById('c-due').value) || 10,
+      color: document.getElementById('c-color').value,
+    });
+
+    btn.disabled = false; btn.textContent = 'Adicionar Cartão';
+
+    if (res.success) {
+      Utils.toast('💳 Cartão adicionado!');
+      closeModal();
+      document.getElementById('c-name').value = '';
+      load();
+    } else {
+      Utils.toast(res.error || 'Erro', 'error');
+    }
+  }
+
+  load();
+</script>
+</body>
+</html>
