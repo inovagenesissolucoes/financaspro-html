@@ -13,7 +13,6 @@ const API = {
       return { success: false, error: 'Erro de conexão. Verifique sua internet.' };
     }
   },
-
   login: (email, password) => API.call('auth.login', { email, password }),
   requestReset: (email) => API.call('auth.requestReset', { email }),
   resetPassword: (email, code, newPassword) => API.call('auth.resetPassword', { email, code, newPassword }),
@@ -28,6 +27,7 @@ const API = {
   listCards: () => API.call('cards.list'),
   createCard: (data) => API.call('cards.create', data),
   listCategories: () => API.call('categories.list'),
+  createCategory: (data) => API.call('categories.create', data),
   listRecurrences: () => API.call('recurrences.list'),
   createRecurrence: (data) => API.call('recurrences.create', data),
   generateMonth: (month) => API.call('recurrences.generateMonth', { month }),
