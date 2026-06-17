@@ -435,7 +435,7 @@
   btn.disabled=false; btn.textContent='Salvar Conta';
   if (res.success) { Utils.toast(id?'✅ Conta atualizada!':'✅ Conta criada!'); closeAccountModal(); loadAccounts(); }
   else Utils.toast(res.error||'Erro','error');
-},
+}
 
   async function saveCategory() {
     const name=document.getElementById('cat-name').value.trim();
