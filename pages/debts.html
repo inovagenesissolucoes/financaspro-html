@@ -7,95 +7,60 @@
   <link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
-<div class="page pt-safe">
+<div class="page">
 
-  <div class="flex items-center justify-between mb-4">
-    <h1>Dívidas Parceladas</h1>
-  </div>
-
-  <!-- Summary -->
-  <div class="grid-2 mb-4" id="summary" style="display:none">
-    <div class="card">
-      <p class="text-xs text-muted mb-2">💸 Total Restante</p>
-      <p class="font-bold text-lg text-red" id="total-remaining">R$ 0</p>
+  <div class="page-hero">
+    <div class="page-hero-row">
+      <div><h1 class="page-hero-title">Dívidas</h1><p class="page-hero-sub">Parcelamentos ativos</p></div>
     </div>
-    <div class="card">
-      <p class="text-xs text-muted mb-2">🔥 Total em Juros</p>
-      <p class="font-bold text-lg text-yellow" id="total-interest">R$ 0</p>
+    <div class="page-hero-pills">
+      <div class="ph-pill"><div class="ph-pill-lbl">Total restante</div><div class="ph-pill-val neg" id="total-remaining">R$ 0</div></div>
+      <div class="ph-pill"><div class="ph-pill-lbl">Em juros</div><div class="ph-pill-val" style="color:#FCD34D;" id="total-interest">R$ 0</div></div>
     </div>
   </div>
 
-  <!-- Debt plan buttons -->
-  <div class="grid-2 mb-4" id="plan-btns" style="display:none">
-    <button class="btn btn-ghost" onclick="loadPlan('avalanche')">🏔 Avalanche</button>
-    <button class="btn btn-ghost" onclick="loadPlan('snowball')">⛄ Bola de Neve</button>
+  <div style="padding:14px 14px 0;" id="plan-btns" style="display:none;">
+    <div class="plan-btns">
+      <button class="plan-btn plan-avalanche" onclick="loadPlan('avalanche')">🏔 Avalanche</button>
+      <button class="plan-btn plan-snowball" onclick="loadPlan('snowball')">⛄ Bola de Neve</button>
+    </div>
   </div>
 
-  <!-- Debt plan result -->
-  <div id="plan-container"></div>
+  <div id="plan-container" style="padding:0 14px;"></div>
 
-  <!-- Debts list -->
-  <div id="list-container">
-    <div class="skeleton"></div>
-    <div class="skeleton" style="height:120px"></div>
+  <div id="list-container" style="padding:14px;">
+    <div class="skeleton"></div><div class="skeleton" style="height:120px;"></div>
   </div>
 
 </div>
 
-<!-- FAB -->
-<button class="fab" onclick="openModal()">+</button>
+<div class="bnav-wrap">
+  <div class="bnav">
+    <a href="dashboard.html" class="ntab"><i class="ti ti-home"></i><span>Início</span></a>
+    <a href="transactions.html" class="ntab"><i class="ti ti-list"></i><span>Lançamentos</span></a>
+    <div class="ncenter"><button class="fab-nav" onclick="openModal()"><i class="ti ti-plus"></i></button></div>
+    <a href="cards.html" class="ntab"><i class="ti ti-credit-card"></i><span>Cartões</span></a>
+    <a href="goals.html" class="ntab"><i class="ti ti-target"></i><span>Metas</span></a>
+  </div>
+</div>
 
-<!-- Modal nova dívida -->
 <div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)closeModal()">
   <div class="modal">
-    <div class="modal-header">
-      <h2>Nova Dívida Parcelada</h2>
-      <button class="modal-close" onclick="closeModal()">✕</button>
-    </div>
-
-    <div class="field">
-      <label class="field-label">Descrição *</label>
-      <input type="text" id="d-desc" placeholder="Ex: Notebook, Geladeira...">
-    </div>
-    <div class="field">
-      <label class="field-label">Valor original do produto (R$)</label>
-      <input type="number" id="d-original" placeholder="Quanto o produto custava" step="0.01" oninput="calcPreview()">
-    </div>
+    <div class="modal-handle"></div>
+    <div class="modal-header"><span class="modal-title">Nova Dívida Parcelada</span><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="field"><label class="field-label">Descrição *</label><input type="text" id="d-desc" placeholder="Ex: Notebook, Geladeira..."></div>
+    <div class="field"><label class="field-label">Valor original do produto (R$)</label><input type="number" id="d-original" placeholder="Quanto custava sem parcelar" step="0.01" oninput="calcPreview()"></div>
     <div class="grid-2">
-      <div class="field">
-        <label class="field-label">Nº de parcelas *</label>
-        <input type="number" id="d-total" placeholder="12" min="1" oninput="calcPreview()">
-      </div>
-      <div class="field">
-        <label class="field-label">Valor por parcela *</label>
-        <input type="number" id="d-install" placeholder="0,00" step="0.01" oninput="calcPreview()">
-      </div>
+      <div class="field"><label class="field-label">Nº de parcelas *</label><input type="number" id="d-total" placeholder="12" min="1" oninput="calcPreview()"></div>
+      <div class="field"><label class="field-label">Valor por parcela *</label><input type="number" id="d-install" placeholder="0,00" step="0.01" oninput="calcPreview()"></div>
     </div>
-    <div class="field">
-      <label class="field-label">Data da 1ª parcela *</label>
-      <input type="date" id="d-date">
+    <div class="field"><label class="field-label">Data da 1ª parcela *</label><input type="date" id="d-date"></div>
+    <div class="field"><label class="field-label">Categoria</label><select id="d-category"><option value="">Sem categoria</option></select></div>
+    <div class="field"><label class="field-label">Conta</label><select id="d-account"><option value="">Sem conta</option></select></div>
+    <div id="debt-preview" class="preview-box" style="display:none;">
+      <div class="preview-row"><span class="preview-lbl">Total a pagar:</span><span class="preview-val" id="preview-total"></span></div>
+      <div class="preview-row" id="preview-interest-row" style="display:none;"><span class="preview-lbl">Juros estimados:</span><span class="preview-val text-yellow" id="preview-interest"></span></div>
     </div>
-    <div class="field">
-      <label class="field-label">Categoria</label>
-      <select id="d-category"><option value="">Sem categoria</option></select>
-    </div>
-    <div class="field">
-      <label class="field-label">Conta</label>
-      <select id="d-account"><option value="">Sem conta</option></select>
-    </div>
-
-    <!-- Preview -->
-    <div id="debt-preview" style="background:var(--bg-input);border-radius:10px;padding:12px;margin-bottom:14px;display:none;">
-      <div class="flex justify-between mb-2">
-        <span class="text-xs text-muted">Total a pagar:</span>
-        <span class="text-xs font-bold" id="preview-total"></span>
-      </div>
-      <div class="flex justify-between" id="preview-interest-row" style="display:none!important">
-        <span class="text-xs text-muted">Juros estimados:</span>
-        <span class="text-xs font-bold text-yellow" id="preview-interest"></span>
-      </div>
-    </div>
-
     <button class="btn btn-primary" id="save-btn" onclick="saveDebt()">Criar Parcelas</button>
   </div>
 </div>
@@ -103,149 +68,93 @@
 <script src="../js/config.js"></script>
 <script src="../js/api.js"></script>
 <script src="../js/utils.js"></script>
-<script src="../js/nav.js"></script>
 <script>
-  if (!Auth.requireAuth()) throw new Error('redirect');
-  renderNav('debts.html');
+  if (!Auth.requireAuth()) throw '';
+  applyTheme();
 
   let categories = [], accounts = [];
 
   async function load() {
-    const [debtsRes, catRes, accRes] = await Promise.all([
-      API.listDebts(),
-      API.listCategories(),
-      API.listAccounts()
-    ]);
-
+    const [debtsRes, catRes, accRes] = await Promise.all([API.listDebts(), API.listCategories(), API.listAccounts()]);
     categories = catRes.success ? catRes.data : [];
     accounts = accRes.success ? accRes.data : [];
-    fillSelects();
+    const catSel = document.getElementById('d-category');
+    const accSel = document.getElementById('d-account');
+    catSel.innerHTML = '<option value="">Sem categoria</option>' + categories.filter(c=>c.type==='expense').map(c=>`<option value="${c.category_id}">${c.icon||''} ${c.name}</option>`).join('');
+    accSel.innerHTML = '<option value="">Sem conta</option>' + accounts.map(a=>`<option value="${a.account_id}">${a.name}</option>`).join('');
 
-    if (!debtsRes.success) {
-      document.getElementById('list-container').innerHTML = '<p class="text-muted text-center">Erro ao carregar.</p>';
-      return;
-    }
-
-    const debts = debtsRes.data;
-
-    if (debts.length === 0) {
-      document.getElementById('list-container').innerHTML = `
-        <div class="empty-state">
-          <div class="empty-icon">🎉</div>
-          <p class="empty-text">Nenhuma dívida parcelada cadastrada</p>
-        </div>`;
-      return;
-    }
-
-    // Show summary
-    const totalRemaining = debts.reduce((s, d) => s + (Number(d.remaining_amount) || 0), 0);
-    const totalInterest = debts.reduce((s, d) => s + (Number(d.interest_amount) || 0), 0);
+    const debts = debtsRes.success ? debtsRes.data : [];
+    const totalRemaining = debts.reduce((s,d)=>s+Number(d.remaining_amount||0),0);
+    const totalInterest = debts.reduce((s,d)=>s+Number(d.interest_amount||0),0);
     document.getElementById('total-remaining').textContent = Utils.formatCurrency(totalRemaining);
     document.getElementById('total-interest').textContent = Utils.formatCurrency(totalInterest);
-    document.getElementById('summary').style.display = 'grid';
-    document.getElementById('plan-btns').style.display = 'grid';
+
+    if (debts.length > 0) document.getElementById('plan-btns').style.display = 'block';
+
+    if (debts.length === 0) {
+      document.getElementById('list-container').innerHTML = `<div class="empty-state"><div class="empty-icon">🎉</div><p class="empty-text">Sem dívidas parceladas!</p><button class="btn btn-primary" style="max-width:200px;margin:0 auto;" onclick="openModal()">Cadastrar dívida</button></div>`;
+      return;
+    }
 
     document.getElementById('list-container').innerHTML = debts.map(d => {
-      const paidCount = Number(d.paid_installments) || 0;
-      const totalCount = Number(d.total_installments) || 1;
-      const progress = Math.min(100, Math.round((paidCount / totalCount) * 100));
-      const remaining = Number(d.remaining_amount) || 0;
-      const installAmt = Number(d.installment_amount) || 0;
-
+      const paid = Number(d.paid_installments)||0;
+      const total = Number(d.total_installments)||1;
+      const pct = Math.min(100, Math.round((paid/total)*100));
       return `
-        <div class="debt-card">
-          <div class="flex justify-between items-start mb-3">
-            <div>
-              <p class="font-semibold">${d.description}</p>
-              <p class="text-xs text-muted mt-1">${paidCount}/${totalCount} parcelas pagas</p>
-            </div>
-            <div style="text-align:right">
-              <p class="font-bold text-red">${Utils.formatCurrency(remaining)}</p>
-              <p class="text-xs text-muted">restante</p>
-            </div>
+        <div class="dcard">
+          <div class="dcard-top">
+            <div><div class="dcard-name">${d.description}</div><div class="dcard-sub">${paid}/${total} parcelas pagas</div></div>
+            <div style="text-align:right;"><div class="dcard-amt">${Utils.formatCurrency(d.remaining_amount)}</div><div class="dcard-lbl">restante</div></div>
           </div>
-          <div class="progress-track mb-3">
-            <div class="progress-fill" style="width:${progress}%; background:${progress >= 100 ? 'var(--green)' : 'var(--accent)'}"></div>
+          <div class="prog"><div class="prog-fill" style="width:${pct}%;"></div></div>
+          <div class="dcard-footer">
+            <span class="dcard-info">Parcela: ${Utils.formatCurrency(d.installment_amount)}</span>
+            <span class="dcard-info">Juros: ${Utils.formatCurrency(d.interest_amount)}</span>
+            ${d.next_due_date ? `<span class="dcard-info">Próxima: ${Utils.formatDate(d.next_due_date)}</span>` : ''}
           </div>
-          <div class="flex justify-between text-xs text-muted">
-            <span>Parcela: ${Utils.formatCurrency(installAmt)}</span>
-            <span>Juros: ${Utils.formatCurrency(d.interest_amount)}</span>
-            ${d.next_due_date ? `<span>Próxima: ${Utils.formatDate(d.next_due_date)}</span>` : ''}
-          </div>
-        </div>
-      `;
+        </div>`;
     }).join('');
   }
 
   async function loadPlan(strategy) {
-    document.getElementById('plan-container').innerHTML = '<div class="skeleton"></div>';
+    document.getElementById('plan-container').innerHTML = '<div style="padding:0 0 10px;"><div class="skeleton"></div></div>';
     const res = await API.getDebtPlan(strategy);
     if (!res.success) { document.getElementById('plan-container').innerHTML = ''; return; }
-
-    const { plan, total_remaining, total_interest } = res.data;
-    const stratLabel = strategy === 'avalanche' ? '🏔 Avalanche (maiores juros primeiro)' : '⛄ Bola de Neve (menor saldo primeiro)';
-    const tip = strategy === 'avalanche' ? 'Você pagará menos juros no total.' : 'Você eliminará dívidas mais rápido e ganhará motivação.';
-
+    const { plan } = res.data;
+    const label = strategy === 'avalanche' ? '🏔 Avalanche — maiores juros primeiro' : '⛄ Bola de Neve — menor saldo primeiro';
+    const tip = strategy === 'avalanche' ? 'Você pagará menos juros no total.' : 'Você eliminará dívidas mais rápido.';
     document.getElementById('plan-container').innerHTML = `
-      <div class="card mb-4">
-        <div class="flex justify-between items-center mb-3">
-          <p class="font-semibold text-sm">${stratLabel}</p>
+      <div class="dcard" style="margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <span class="dcard-name">${label}</span>
           <button onclick="document.getElementById('plan-container').innerHTML=''" style="background:none;border:none;color:var(--text-3);cursor:pointer;font-size:1rem;">✕</button>
         </div>
-        <p class="text-xs text-muted mb-3">${tip}</p>
-        ${plan.map((d, i) => `
-          <div class="flex items-center gap-3" style="margin-bottom:10px;">
-            <div style="width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;flex-shrink:0;background:${i===0?'var(--accent)':'var(--bg-input)'};color:${i===0?'#fff':'var(--text-2)'}">
-              ${i+1}
-            </div>
-            <div class="flex-1 min-w-0">
-              <p class="text-sm truncate">${d.description}</p>
-              <p class="text-xs text-muted">${Utils.formatCurrency(d.remaining_amount)} restante</p>
-            </div>
-            ${i===0 ? `<span style="background:var(--accent);color:#fff;font-size:0.65rem;padding:3px 8px;border-radius:6px;flex-shrink:0;">Prioridade</span>` : ''}
-          </div>
-        `).join('')}
-      </div>
-    `;
-  }
-
-  function fillSelects() {
-    const catSel = document.getElementById('d-category');
-    const accSel = document.getElementById('d-account');
-    catSel.innerHTML = '<option value="">Sem categoria</option>' +
-      categories.filter(c => c.type === 'expense').map(c =>
-        `<option value="${c.category_id}">${c.icon||''} ${c.name}</option>`).join('');
-    accSel.innerHTML = '<option value="">Sem conta</option>' +
-      accounts.map(a => `<option value="${a.account_id}">${a.name}</option>`).join('');
+        <p style="font-size:11px;color:var(--text-3);margin-bottom:12px;">${tip}</p>
+        ${plan.map((d,i)=>`
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+            <div style="width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;background:${i===0?'#4F46E5':'var(--bg-input)'};color:${i===0?'#fff':'var(--text-2)'};">${i+1}</div>
+            <div style="flex:1;min-width:0;"><p style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${d.description}</p><p style="font-size:10px;color:var(--text-3);">${Utils.formatCurrency(d.remaining_amount)} restante</p></div>
+            ${i===0?`<span style="background:#4F46E5;color:#fff;font-size:9px;font-weight:700;padding:3px 8px;border-radius:6px;flex-shrink:0;">Prioridade</span>`:''}
+          </div>`).join('')}
+      </div>`;
   }
 
   function calcPreview() {
-    const total = parseFloat(document.getElementById('d-total').value) || 0;
-    const install = parseFloat(document.getElementById('d-install').value) || 0;
-    const original = parseFloat(document.getElementById('d-original').value) || 0;
-
+    const total = parseFloat(document.getElementById('d-total').value)||0;
+    const install = parseFloat(document.getElementById('d-install').value)||0;
+    const original = parseFloat(document.getElementById('d-original').value)||0;
     if (total > 0 && install > 0) {
       const totalPay = total * install;
       const interest = totalPay - original;
       document.getElementById('preview-total').textContent = Utils.formatCurrency(totalPay);
       document.getElementById('debt-preview').style.display = 'block';
-
-      const interestRow = document.getElementById('preview-interest-row');
-      if (original > 0 && interest > 0) {
-        document.getElementById('preview-interest').textContent = Utils.formatCurrency(interest);
-        interestRow.style.display = 'flex';
-      } else {
-        interestRow.style.display = 'none';
-      }
-    } else {
-      document.getElementById('debt-preview').style.display = 'none';
-    }
+      const irow = document.getElementById('preview-interest-row');
+      if (original > 0 && interest > 0.01) { document.getElementById('preview-interest').textContent = Utils.formatCurrency(interest); irow.style.display = 'flex'; }
+      else irow.style.display = 'none';
+    } else document.getElementById('debt-preview').style.display = 'none';
   }
 
-  function openModal() {
-    document.getElementById('d-date').value = new Date().toISOString().split('T')[0];
-    document.getElementById('modal-overlay').classList.add('open');
-  }
+  function openModal() { document.getElementById('d-date').value = new Date().toISOString().split('T')[0]; document.getElementById('modal-overlay').classList.add('open'); }
   function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
 
   async function saveDebt() {
@@ -253,35 +162,13 @@
     const totalInstall = parseInt(document.getElementById('d-total').value);
     const installAmt = parseFloat(document.getElementById('d-install').value);
     const firstDate = document.getElementById('d-date').value;
-
-    if (!desc || !totalInstall || !installAmt || !firstDate) {
-      Utils.toast('Preencha os campos obrigatórios', 'error'); return;
-    }
-
+    if (!desc || !totalInstall || !installAmt || !firstDate) { Utils.toast('Preencha os campos obrigatórios','error'); return; }
     const btn = document.getElementById('save-btn');
     btn.disabled = true; btn.textContent = `Criando ${totalInstall} parcelas...`;
-
-    const result = await API.createDebt({
-      description: desc,
-      original_amount: parseFloat(document.getElementById('d-original').value) || (totalInstall * installAmt),
-      total_installments: totalInstall,
-      installment_amount: installAmt,
-      first_due_date: firstDate,
-      category_id: document.getElementById('d-category').value,
-      account_id: document.getElementById('d-account').value,
-    });
-
+    const res = await API.createDebt({ description:desc, original_amount:parseFloat(document.getElementById('d-original').value)||(totalInstall*installAmt), total_installments:totalInstall, installment_amount:installAmt, first_due_date:firstDate, category_id:document.getElementById('d-category').value, account_id:document.getElementById('d-account').value });
     btn.disabled = false; btn.textContent = 'Criar Parcelas';
-
-    if (result.success) {
-      Utils.toast(`✅ ${totalInstall} parcelas criadas!`);
-      closeModal();
-      ['d-desc','d-original','d-total','d-install'].forEach(id => document.getElementById(id).value = '');
-      document.getElementById('debt-preview').style.display = 'none';
-      load();
-    } else {
-      Utils.toast(result.error || 'Erro ao salvar', 'error');
-    }
+    if (res.success) { Utils.toast(`✅ ${totalInstall} parcelas criadas!`); closeModal(); ['d-desc','d-original','d-total','d-install'].forEach(id=>document.getElementById(id).value=''); document.getElementById('debt-preview').style.display='none'; load(); }
+    else Utils.toast(res.error||'Erro','error');
   }
 
   load();
