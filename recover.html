@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>FinançasPRO — Recuperar Senha</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="login-page">
+  <div style="padding-top:56px;">
+    <a href="index.html" style="color:var(--text-3);font-size:0.875rem;text-decoration:none;">← Voltar</a>
+    <h1 style="margin-top:24px;margin-bottom:6px;">Recuperar Senha</h1>
+    <p class="text-secondary text-sm">Enviaremos um código para seu email.</p>
+  </div>
+
+  <!-- Step 1: Email -->
+  <div id="step1">
+    <div class="field mb-4">
+      <label class="field-label">Email</label>
+      <input type="email" id="rec-email" placeholder="seu@email.com">
+    </div>
+    <button class="btn btn-primary" id="send-btn" onclick="sendCode()">Enviar Código</button>
+  </div>
+
+  <!-- Step 2: Code + new password -->
+  <div id="step2" style="display:none;">
+    <div class="field">
+      <label class="field-label">Código recebido por email</label>
+      <input type="text" id="rec-code" placeholder="123456" maxlength="6" style="letter-spacing:4px;text-align:center;font-size:1.2rem;">
+    </div>
+    <div class="field">
+      <label class="field-label">Nova senha</label>
+      <input type="password" id="new-pass" placeholder="••••••••">
+    </div>
+    <div class="field">
+      <label class="field-label">Confirmar nova senha</label>
+      <input type="password" id="confirm-pass" placeholder="••••••••">
+    </div>
+    <button class="btn btn-primary" id="reset-btn" onclick="resetPassword()">Redefinir Senha</button>
+  </div>
+
+  <div style="padding-bottom:32px;"></div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/utils.js"></script>
+<script>
+  async function sendCode() {
+    const email = document.getElementById('rec-email').value.trim();
+    if (!email) { Utils.toast('Digite seu email', 'error'); return; }
+
+    const btn = document.getElementById('send-btn');
+    btn.disabled = true; btn.textContent = 'Enviando...';
+
+    const res = await API.requestReset(email);
+
+    if (res.success) {
+      Utils.toast('📧 Código enviado! Verifique seu email.');
+      document.getElementById('step1').style.display = 'none';
+      document.getElementById('step2').style.display = 'block';
+    } else {
+      Utils.toast(res.error || 'Erro ao enviar', 'error');
+      btn.disabled = false; btn.textContent = 'Enviar Código';
+    }
+  }
+
+  async function resetPassword() {
+    const email = document.getElementById('rec-email').value.trim();
+    const code = document.getElementById('rec-code').value.trim();
+    const newPass = document.getElementById('new-pass').value;
+    const confirmPass = document.getElementById('confirm-pass').value;
+
+    if (newPass !== confirmPass) { Utils.toast('As senhas não conferem', 'error'); return; }
+    if (newPass.length < 6) { Utils.toast('Senha deve ter pelo menos 6 caracteres', 'error'); return; }
+
+    const btn = document.getElementById('reset-btn');
+    btn.disabled = true; btn.textContent = 'Redefinindo...';
+
+    const res = await API.resetPassword(email, code, newPass);
+
+    if (res.success) {
+      Utils.toast('✅ Senha redefinida com sucesso!');
+      setTimeout(() => window.location.href = 'index.html', 1500);
+    } else {
+      Utils.toast(res.error || 'Código inválido ou expirado', 'error');
+      btn.disabled = false; btn.textContent = 'Redefinir Senha';
+    }
+  }
+</script>
+</body>
+</html>
