@@ -30,10 +30,12 @@
     </div>
   </div>
 
-  <div style="display:flex;gap:6px;padding:12px 14px 8px;">
-    <button class="tab tab-all" onclick="setTab('all',this)">Todos</button>
-    <button class="tab tab-income" onclick="setTab('income',this)">Receitas</button>
-    <button class="tab tab-expense" onclick="setTab('expense',this)">Despesas</button>
+  <div style="display:flex;gap:5px;padding:12px 14px 8px;overflow-x:auto;" class="no-scrollbar">
+    <button class="tab tab-all" style="white-space:nowrap;flex-shrink:0;" onclick="setTab('all',this)">Todos</button>
+    <button class="tab tab-income" style="white-space:nowrap;flex-shrink:0;" onclick="setTab('income',this)">Receitas</button>
+    <button class="tab tab-expense" style="white-space:nowrap;flex-shrink:0;" onclick="setTab('expense',this)">Despesas</button>
+    <button class="tab" style="white-space:nowrap;flex-shrink:0;background:var(--accent-light);color:var(--accent-2);" onclick="setTab('recurring',this)">🔄 Recorrentes</button>
+    <button class="tab" style="white-space:nowrap;flex-shrink:0;background:var(--red-bg);color:var(--red);" onclick="setTab('overdue',this)">⚠ Vencidas</button>
   </div>
 
   <div id="list-container">
@@ -169,7 +171,7 @@
     <div class="field"><label class="field-label">Data da 1ª parcela *</label><input type="date" id="d-date" onchange="checkRetroactive()"></div>
     <div id="retroactive-section" style="display:none;background:var(--yellow-bg);border-radius:var(--radius-sm);padding:14px;margin-bottom:14px;border:0.5px solid #FCD34D;">
       <p style="font-size:12px;font-weight:700;color:#92400E;margin-bottom:4px;">📅 Parcelamento retroativo</p>
-      <p style="font-size:10px;color:#B45309;margin-bottom:10px;">Parcelas passadas serão marcadas como histórico (sem afetar saldo).</p>
+      <p style="font-size:10px;color:#B45309;margin-bottom:10px;">Parcelas passadas serão marcadas como histórico (sem afetar saldo). Informe a última paga:</p>
       <div class="field" style="margin-bottom:0;"><label class="field-label">Última parcela paga (mês/ano)</label><input type="month" id="d-last-paid"><p style="font-size:10px;color:#B45309;margin-top:4px;">Deixe em branco para marcar todas as passadas como histórico</p></div>
     </div>
     <div class="field"><label class="field-label">Conta / Cartão</label><select id="d-account"><option value="">Sem conta</option></select></div>
@@ -200,13 +202,12 @@
 
   function setTab(tab, el) {
     activeTab = tab;
-    document.querySelectorAll('.tab').forEach(t => {
-      t.classList.remove('tab-all','tab-income','tab-expense');
-      t.style.background = 'var(--bg-card)'; t.style.color = 'var(--text-3)';
-    });
-    if (tab==='all')     el.classList.add('tab-all');
-    if (tab==='income')  el.classList.add('tab-income');
-    if (tab==='expense') el.classList.add('tab-expense');
+    document.querySelectorAll('.tab').forEach(t => { t.classList.remove('tab-all','tab-income','tab-expense'); t.style.background='var(--bg-card)'; t.style.color='var(--text-3)'; });
+    if (tab==='all') el.classList.add('tab-all');
+    else if (tab==='income') el.classList.add('tab-income');
+    else if (tab==='expense') el.classList.add('tab-expense');
+    else if (tab==='recurring') { el.style.background='var(--accent-light)'; el.style.color='var(--accent-2)'; }
+    else if (tab==='overdue') { el.style.background='var(--red-bg)'; el.style.color='var(--red)'; }
     renderList();
   }
 
@@ -217,35 +218,27 @@
     allTx=txRes.success?txRes.data:[]; categories=catRes.success?catRes.data:[]; accounts=accRes.success?accRes.data:[]; cards=cardRes.success?cardRes.data:[];
     const income=allTx.filter(t=>t.type==='income'&&t.status!=='cancelled');
     const expense=allTx.filter(t=>t.type==='expense'&&t.status!=='cancelled');
-    document.getElementById('ph-income').textContent=Utils.formatCurrency(income.reduce((s,t)=>s+Number(t.expected_amount||0),0));
-    document.getElementById('ph-expense').textContent=Utils.formatCurrency(expense.reduce((s,t)=>s+Number(t.expected_amount||0),0));
-    document.getElementById('ph-net').textContent=Utils.formatCurrency(income.reduce((s,t)=>s+Number(t.expected_amount||0),0)-expense.reduce((s,t)=>s+Number(t.expected_amount||0),0));
+    const totalIn=income.reduce((s,t)=>s+Number(t.expected_amount||0),0);
+    const totalExp=expense.reduce((s,t)=>s+Number(t.expected_amount||0),0);
+    document.getElementById('ph-income').textContent=Utils.formatCurrency(totalIn);
+    document.getElementById('ph-expense').textContent=Utils.formatCurrency(totalExp);
+    document.getElementById('ph-net').textContent=Utils.formatCurrency(totalIn-totalExp);
     renderList();
   }
 
-  function isRecurring(tx) { return tx.is_recurring == true || tx.is_recurring === 'TRUE'; }
-
   function renderList() {
-    let f = allTx.filter(t => t.status !== 'cancelled');
-    if (activeTab === 'income')  f = f.filter(t => t.type === 'income');
-    if (activeTab === 'expense') f = f.filter(t => t.type === 'expense');
-
-    if (f.length === 0) {
-      document.getElementById('list-container').innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><p class="empty-text">Nenhum lançamento encontrado</p><button class="btn btn-primary" style="max-width:200px;margin:0 auto;" onclick="openTypeSelector()">Adicionar</button></div>`;
-      return;
-    }
-
-    const overdue   = f.filter(t => t.status !== 'paid' && Utils.isOverdue(t.due_date, t.status));
-    const recurring = f.filter(t => t.status !== 'paid' && !Utils.isOverdue(t.due_date, t.status) && isRecurring(t));
-    const pending   = f.filter(t => t.status !== 'paid' && !Utils.isOverdue(t.due_date, t.status) && !isRecurring(t));
-    const paid      = f.filter(t => t.status === 'paid');
-
-    let html = '';
-    if (overdue.length > 0)   html += `<div class="date-label">⚠ Vencidas</div><div class="tx-list">${overdue.map(renderCard).join('')}</div>`;
-    if (recurring.length > 0) html += `<div class="date-label">🔄 Recorrentes</div><div class="tx-list">${recurring.map(renderCard).join('')}</div>`;
-    if (pending.length > 0)   html += `<div class="date-label">📋 Pendentes</div><div class="tx-list">${pending.map(renderCard).join('')}</div>`;
-    if (paid.length > 0)      html += `<div class="date-label">✓ Concluídas</div><div class="tx-list">${paid.map(renderCard).join('')}</div>`;
-    document.getElementById('list-container').innerHTML = html;
+    let f=allTx.filter(t=>t.status!=='cancelled');
+    if (activeTab==='income') f=f.filter(t=>t.type==='income');
+    else if (activeTab==='expense') f=f.filter(t=>t.type==='expense');
+    else if (activeTab==='recurring') f=f.filter(t=>t.is_recurring==true||t.is_recurring==='TRUE');
+    else if (activeTab==='overdue') f=f.filter(t=>Utils.isOverdue(t.due_date,t.status));
+    if (f.length===0) { document.getElementById('list-container').innerHTML=`<div class="empty-state"><div class="empty-icon">📭</div><p class="empty-text">Nenhum lançamento encontrado</p><button class="btn btn-primary" style="max-width:200px;margin:0 auto;" onclick="openTypeSelector()">Adicionar</button></div>`; return; }
+    const paid=f.filter(t=>t.status==='paid'), overdue=f.filter(t=>t.status!=='paid'&&Utils.isOverdue(t.due_date,t.status)), pending=f.filter(t=>t.status!=='paid'&&!Utils.isOverdue(t.due_date,t.status));
+    let html='';
+    if (overdue.length>0) html+=`<div class="date-label">⚠ Vencidas</div><div class="tx-list">${overdue.map(renderCard).join('')}</div>`;
+    if (pending.length>0) html+=`<div class="date-label">Pendentes</div><div class="tx-list">${pending.map(renderCard).join('')}</div>`;
+    if (paid.length>0) html+=`<div class="date-label">✓ Concluídas</div><div class="tx-list">${paid.map(renderCard).join('')}</div>`;
+    document.getElementById('list-container').innerHTML=html;
   }
 
   function renderCard(tx) {
@@ -256,6 +249,7 @@
     const icon=cat?.icon||(tx.card_id?'💳':tx.type==='income'?'💼':'💰');
     const sub=[cat?.name,acc?.name||card?.name].filter(Boolean).join(' · ');
     const badge=tx.status==='paid'?`<span class="badge b-paid">${tx.type==='income'?'✓ Recebido':'✓ Pago'}</span>`:overdue?'<span class="badge b-over">⚠ Vencida</span>':`<span class="badge b-pend">Vence ${Utils.formatDate(tx.due_date)}</span>`;
+    const recTag=(tx.is_recurring==true||tx.is_recurring==='TRUE')?'<span class="badge" style="background:var(--accent-light);color:var(--accent-2);margin-left:4px;">🔄</span>':'';
     const instTag=tx.installment_number?`<span class="badge" style="background:#FEF3C7;color:#92400E;margin-left:4px;">📌 ${tx.installment_number}ª parc.</span>`:'';
     let amtHtml='';
     if (tx.status==='paid'&&tx.actual_amount&&Math.abs(Number(tx.actual_amount)-Number(tx.expected_amount))>0.01) {
@@ -268,7 +262,7 @@
       amtHtml=`<div class="tx-amt ${tx.type==='income'?'tx-pos':'tx-neg'}">${tx.type==='income'?'+':'-'}${Utils.formatCurrency(amt)}</div>`;
     }
     const payBtn=tx.status==='pending'?`<button class="pay-btn" onclick="openPayModal('${tx.transaction_id}','${tx.account_id||''}',${tx.expected_amount},'${tx.type}','${tx.description.replace(/'/g,"\\'")}')">${tx.type==='income'?'Confirmar':'Pagar'}</button>`:'';
-    return `<div class="tx-card ${overdue&&tx.status!=='paid'?'overdue':''}"><div class="tx-ico" style="background:${(cat?.color||'#6366F1')}22;">${icon}</div><div class="tx-body"><div class="tx-name">${tx.description}</div><div class="tx-cat">${sub}</div><div>${badge}${instTag}</div></div><div class="tx-right">${amtHtml}${payBtn}</div></div>`;
+    return `<div class="tx-card ${overdue&&tx.status!=='paid'?'overdue':''}"><div class="tx-ico" style="background:${(cat?.color||'#6366F1')}22;">${icon}</div><div class="tx-body"><div class="tx-name">${tx.description}</div><div class="tx-cat">${sub}</div><div>${badge}${recTag}${instTag}</div></div><div class="tx-right">${amtHtml}${payBtn}</div></div>`;
   }
 
   function openPayModal(txId,accountId,expected,type,name) {
@@ -317,7 +311,7 @@
     closeTypeSelector(); txType=type;
     document.getElementById('tx-modal-title').textContent=type==='income'?'Nova Receita':'Nova Despesa';
     document.getElementById('tx-date').value=new Date().toISOString().split('T')[0];
-    document.getElementById('tx-category').innerHTML='<option value="">Sem categoria</option>'+categories.filter(c=>c.type===type).map(c=>`<option value="${c.category_id}">${c.icon||''} ${c.name}</option>`).join('');
+    document.getElementById('tx-category').innerHTML='<option value="">Sem categoria</option>'+categories.filter(c=>c.type===type).map(c=>`<option value="${c.category_id}">${c.icon||''} ${c.name}${c.subcategory ? ' · ' + c.subcategory : ''}</option>`).join('');
     document.getElementById('tx-account').innerHTML='<option value="">Sem conta</option>'+accounts.map(a=>`<option value="${a.account_id}">${a.name}</option>`).join('');
     document.getElementById('tx-modal').classList.add('open');
   }
@@ -336,7 +330,7 @@
     closeTypeSelector();
     document.getElementById('cm-date').value=new Date().toISOString().split('T')[0];
     document.getElementById('cm-card').innerHTML='<option value="">Selecione o cartão</option>'+cards.map(c=>`<option value="${c.card_id}">${c.name}</option>`).join('');
-    document.getElementById('cm-category').innerHTML='<option value="">Sem categoria</option>'+categories.filter(c=>c.type==='expense').map(c=>`<option value="${c.category_id}">${c.icon||''} ${c.name}</option>`).join('');
+    document.getElementById('cm-category').innerHTML='<option value="">Sem categoria</option>'+categories.filter(c=>c.type==='expense').map(c=>`<option value="${c.category_id}">${c.icon||''} ${c.name}${c.subcategory ? ' · ' + c.subcategory : ''}</option>`).join('');
     document.getElementById('card-modal').classList.add('open');
   }
   function closeCardModal() { document.getElementById('card-modal').classList.remove('open'); }
@@ -381,7 +375,7 @@
     recType=type;
     document.getElementById('rec-btn-expense').classList.toggle('active',type==='expense');
     document.getElementById('rec-btn-income').classList.toggle('active',type==='income');
-    document.getElementById('rec-category').innerHTML='<option value="">Sem categoria</option>'+categories.filter(c=>c.type===type).map(c=>`<option value="${c.category_id}">${c.icon||''} ${c.name}</option>`).join('');
+    document.getElementById('rec-category').innerHTML='<option value="">Sem categoria</option>'+categories.filter(c=>c.type===type).map(c=>`<option value="${c.category_id}">${c.icon||''} ${c.name}${c.subcategory ? ' · ' + c.subcategory : ''}</option>`).join('');
     document.getElementById('rec-account').innerHTML='<option value="">Sem conta</option>'+accounts.map(a=>`<option value="${a.account_id}">${a.name}</option>`).join('');
   }
 
@@ -406,7 +400,7 @@
     document.getElementById('d-date').value=new Date().toISOString().split('T')[0];
     document.getElementById('retroactive-section').style.display='none';
     document.getElementById('d-account').innerHTML='<option value="">Sem conta</option>'+accounts.map(a=>`<option value="${a.account_id}">${a.name}</option>`).join('')+cards.map(c=>`<option value="card:${c.card_id}">💳 ${c.name}</option>`).join('');
-    document.getElementById('d-category').innerHTML='<option value="">Sem categoria</option>'+categories.filter(c=>c.type==='expense').map(c=>`<option value="${c.category_id}">${c.icon||''} ${c.name}</option>`).join('');
+    document.getElementById('d-category').innerHTML='<option value="">Sem categoria</option>'+categories.filter(c=>c.type==='expense').map(c=>`<option value="${c.category_id}">${c.icon||''} ${c.name}${c.subcategory ? ' · ' + c.subcategory : ''}</option>`).join('');
     document.getElementById('debt-modal').classList.add('open');
   }
   function closeDebtModal() { document.getElementById('debt-modal').classList.remove('open'); }
