@@ -7,32 +7,61 @@
   <link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
-<div class="page pt-safe">
+<div class="page">
 
-  <!-- Header -->
-  <div class="flex items-center justify-between mb-4">
-    <div>
-      <p class="text-xs text-muted">Olá, <span id="user-name"></span> 👋</p>
-      <h1>Resumo Financeiro</h1>
+  <div class="hero" id="hero-section">
+    <div class="hero-top">
+      <div>
+        <p class="hero-greeting">Boa tarde,</p>
+        <p class="hero-name" id="user-name">Carregando...</p>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button class="theme-btn" onclick="toggleTheme()" title="Alternar tema">🌙</button>
+        <a href="../settings.html" class="hero-avatar" id="user-initials">?</a>
+      </div>
     </div>
-    <button onclick="Auth.logout()" class="btn-ghost btn btn-sm" style="width:auto;">Sair</button>
+    <p class="hero-bal-label">Saldo total em contas</p>
+    <p class="hero-bal" id="total-balance">R$ 0,00</p>
+    <p class="hero-sub" id="hero-sub">Atualizando...</p>
+    <div class="hero-pills">
+      <div class="hpill"><div class="hpill-lbl">A receber</div><div class="hpill-val pos" id="income-pending">R$ 0</div></div>
+      <div class="hpill"><div class="hpill-lbl">A pagar</div><div class="hpill-val neg" id="expense-pending">R$ 0</div></div>
+      <div class="hpill"><div class="hpill-lbl">Comprometido</div><div class="hpill-val" id="commitment-rate">0%</div></div>
+    </div>
   </div>
 
-  <!-- Month nav -->
-  <div class="month-nav">
-    <button onclick="changeMonth(-1)">‹</button>
-    <span id="month-label"></span>
-    <button onclick="changeMonth(1)">›</button>
+  <div class="stat-grid">
+    <div class="scard scard-3"><div class="scard-icon">✅</div><div class="scard-lbl">Já recebi</div><div class="scard-val" id="income-paid">R$ 0</div></div>
+    <div class="scard scard-2"><div class="scard-icon">💸</div><div class="scard-lbl">Já paguei</div><div class="scard-val" id="expense-paid">R$ 0</div></div>
+    <div class="scard scard-1"><div class="scard-icon">📈</div><div class="scard-lbl">Saldo previsto</div><div class="scard-val" id="net-balance">R$ 0</div></div>
+    <div class="scard scard-4"><div class="scard-icon">⚠️</div><div class="scard-lbl">Vencidas</div><div class="scard-val" id="overdue-count">0</div></div>
   </div>
 
-  <!-- Content -->
-  <div id="content">
-    <div class="skeleton"></div>
-    <div class="skeleton" style="height:80px"></div>
-    <div class="skeleton"></div>
-    <div class="skeleton"></div>
+  <div id="overdue-alert"></div>
+
+  <div class="sec">
+    <div class="sec-hdr"><span class="sec-title">Minhas Contas</span></div>
+    <div class="acc-scroll" id="accounts-list"><div class="skeleton" style="min-width:110px;height:90px;"></div></div>
   </div>
 
+  <div class="divider"></div>
+
+  <div class="sec sec-last">
+    <div class="sec-hdr"><span class="sec-title">Maiores Gastos</span><a href="transactions.html" class="sec-link">Ver todos →</a></div>
+    <div class="cat-list" id="cat-list"><div class="skeleton"></div><div class="skeleton"></div></div>
+  </div>
+
+</div>
+
+<!-- Bottom nav -->
+<div class="bnav-wrap">
+  <div class="bnav">
+    <a href="dashboard.html" class="ntab on"><i class="ti ti-home"></i><span>Início</span><span class="ndot"></span></a>
+    <a href="transactions.html" class="ntab"><i class="ti ti-list"></i><span>Lançamentos</span></a>
+    <div class="ncenter"><button class="fab-nav" onclick="window.location.href='transactions.html#new'"><i class="ti ti-plus"></i></button></div>
+    <a href="cards.html" class="ntab"><i class="ti ti-credit-card"></i><span>Cartões</span></a>
+    <a href="goals.html" class="ntab"><i class="ti ti-target"></i><span>Metas</span></a>
+  </div>
 </div>
 
 <script src="../js/config.js"></script>
@@ -40,173 +69,78 @@
 <script src="../js/utils.js"></script>
 <script src="../js/nav.js"></script>
 <script>
-  if (!Auth.requireAuth()) throw new Error('redirect');
-  renderNav('dashboard.html');
-  Utils.setUserName();
+  if (!Auth.requireAuth()) throw '';
 
-  let month = Utils.getActiveMonth();
+  const COLORS = ['#4F46E5','#D97706','#DC2626','#16A34A','#0EA5E9','#EC4899','#F97316'];
+  const ACC_CLASSES = ['ac-purple','ac-blue','ac-green','ac-pink','ac-orange'];
 
-  function changeMonth(delta) {
-    month = Utils.addMonths(month, delta);
-    Utils.setActiveMonth(month);
-    loadDashboard();
-  }
-
-  async function loadDashboard() {
-    document.getElementById('month-label').textContent = Utils.formatMonth(month);
+  async function load() {
+    const user = Auth.getUser();
+    document.getElementById('user-name').textContent = user?.name?.split(' ')[0] + ' 👋' || '';
+    document.getElementById('user-initials').textContent = (user?.name||'?').split(' ').map(n=>n[0]).slice(0,2).join('');
+    document.getElementById('hero-sub').textContent = Utils.formatMonth(Utils.getActiveMonth());
 
     const [sumRes, catRes] = await Promise.all([
-      API.getDashboard(month),
-      API.getCategoryBreakdown(month)
+      API.getDashboard(Utils.getActiveMonth()),
+      API.getCategoryBreakdown(Utils.getActiveMonth())
     ]);
 
-    if (!sumRes.success) {
-      document.getElementById('content').innerHTML = `<p class="text-muted text-center">Erro ao carregar dados.</p>`;
-      return;
-    }
-
+    if (!sumRes.success) return;
     const s = sumRes.data;
+
+    document.getElementById('total-balance').textContent = Utils.formatCurrency(s.total_balance);
+    document.getElementById('income-pending').textContent = Utils.formatCurrency(s.income.pending);
+    document.getElementById('expense-pending').textContent = Utils.formatCurrency(s.expense.pending);
+    document.getElementById('commitment-rate').textContent = s.commitment_rate + '%';
+    document.getElementById('income-paid').textContent = Utils.formatCurrency(s.income.paid);
+    document.getElementById('expense-paid').textContent = Utils.formatCurrency(s.expense.paid);
+    document.getElementById('net-balance').textContent = Utils.formatCurrency(s.net);
+    document.getElementById('overdue-count').textContent = s.overdue_count + (s.overdue_count === 1 ? ' conta' : ' contas');
+
+    if (s.overdue_count > 0) {
+      document.getElementById('overdue-alert').innerHTML = `
+        <div class="alert-banner alert-danger">
+          <span class="alert-icon">🚨</span>
+          <div><div class="alert-title">${s.overdue_count} conta${s.overdue_count>1?'s':''} vencida${s.overdue_count>1?'s':''}</div>
+          <div class="alert-sub">${Utils.formatCurrency(s.overdue_amount)} em atraso</div></div>
+        </div>`;
+    }
+
+    // Accounts
+    if (s.accounts?.length > 0) {
+      document.getElementById('accounts-list').innerHTML = s.accounts.map((a,i) => `
+        <div class="acc-card ${ACC_CLASSES[i % ACC_CLASSES.length]}">
+          <div class="acc-emoji">🏦</div>
+          <div class="acc-name">${a.name}</div>
+          <div class="acc-type">${a.type === 'checking' ? 'Conta corrente' : a.type === 'savings' ? 'Poupança' : a.type === 'wallet' ? 'Carteira' : 'Conta'}</div>
+          <div class="acc-bal">${Utils.formatCurrency(a.current_balance)}</div>
+        </div>`).join('');
+    } else {
+      document.getElementById('accounts-list').innerHTML = '<p style="font-size:12px;color:var(--text-3);padding:8px 0;">Nenhuma conta cadastrada</p>';
+    }
+
+    // Categories
     const cats = catRes.success ? catRes.data : [];
-    const healthColor = s.health_score > 60 ? 'var(--green)' : s.health_score > 30 ? 'var(--yellow)' : 'var(--red)';
-
-    document.getElementById('content').innerHTML = `
-      <!-- Hero card -->
-      <div class="hero-card mb-4">
-        <p class="text-xs" style="color:rgba(255,255,255,0.65); margin-bottom:4px;">Saldo Total</p>
-        <p class="text-3xl font-bold" style="color:#fff; margin-bottom:12px;">${Utils.formatCurrency(s.total_balance)}</p>
-        <div class="flex gap-4">
-          <div>
-            <p class="text-xs" style="color:rgba(255,255,255,0.6);">Saúde Financeira</p>
-            <p class="font-semibold" style="color:#fff;">${s.health_score}%</p>
-          </div>
-          <div>
-            <p class="text-xs" style="color:rgba(255,255,255,0.6);">Renda Comprometida</p>
-            <p class="font-semibold" style="color:#fff;">${s.commitment_rate}%</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- 4 summary cards -->
-      <div class="grid-2 mb-4">
-        <div class="card">
-          <p class="text-xs text-muted mb-2">📥 A Receber</p>
-          <p class="font-bold text-lg text-green">${Utils.formatCurrency(s.income.pending)}</p>
-        </div>
-        <div class="card">
-          <p class="text-xs text-muted mb-2">📤 A Pagar</p>
-          <p class="font-bold text-lg text-red">${Utils.formatCurrency(s.expense.pending)}</p>
-        </div>
-        <div class="card">
-          <p class="text-xs text-muted mb-2">✅ Já Recebi</p>
-          <p class="font-bold text-lg text-accent">${Utils.formatCurrency(s.income.paid)}</p>
-        </div>
-        <div class="card">
-          <p class="text-xs text-muted mb-2">💸 Já Paguei</p>
-          <p class="font-bold text-lg text-yellow">${Utils.formatCurrency(s.expense.paid)}</p>
-        </div>
-      </div>
-
-      ${s.overdue_count > 0 ? `
-        <div class="alert alert-danger mb-4">
-          <span style="font-size:1.5rem;">⚠️</span>
-          <div>
-            <p class="font-semibold text-sm" style="color:#FCA5A5;">${s.overdue_count} conta${s.overdue_count > 1 ? 's' : ''} vencida${s.overdue_count > 1 ? 's' : ''}</p>
-            <p class="text-xs" style="color:#F87171;">${Utils.formatCurrency(s.overdue_amount)} em atraso</p>
-          </div>
-        </div>
-      ` : ''}
-
-      <!-- Contas -->
-      ${s.accounts && s.accounts.length > 0 ? `
-        <div class="card mb-4">
-          <p class="font-semibold text-sm mb-3">🏦 Minhas Contas</p>
-          ${s.accounts.map(a => `
-            <div class="flex items-center justify-between" style="margin-bottom:10px;">
-              <div class="flex items-center gap-2">
-                <div style="width:10px;height:10px;border-radius:50%;background:${a.color || 'var(--accent)'}"></div>
-                <span class="text-sm">${a.name}</span>
-              </div>
-              <span class="font-semibold text-sm" style="color:${Number(a.current_balance) >= 0 ? 'var(--green)' : 'var(--red)'}">
-                ${Utils.formatCurrency(a.current_balance)}
-              </span>
-            </div>
-          `).join('')}
-        </div>
-      ` : ''}
-
-      <!-- Category breakdown -->
-      ${cats.length > 0 ? `
-        <div class="card mb-4">
-          <p class="font-semibold text-sm mb-3">🍩 Gastos por Categoria</p>
-          <div class="donut-wrap">
-            <canvas id="donut-chart" width="110" height="110" style="flex-shrink:0;"></canvas>
-            <div class="donut-legend">
-              ${cats.slice(0, 5).map(c => `
-                <div class="legend-item">
-                  <div class="legend-dot" style="background:${c.color}"></div>
-                  <span class="legend-name">${c.name}</span>
-                  <span class="legend-val">${Utils.formatCurrency(c.total)}</span>
-                </div>
-              `).join('')}
-            </div>
-          </div>
-        </div>
-      ` : ''}
-
-      <!-- Saldo do mês -->
-      <div class="card">
-        <p class="font-semibold text-sm mb-3">📈 Balanço do Mês</p>
-        <div class="flex justify-between mb-2">
-          <span class="text-sm text-muted">Receitas previstas</span>
-          <span class="font-medium text-green">${Utils.formatCurrency(s.income.expected)}</span>
-        </div>
-        <div class="flex justify-between mb-2">
-          <span class="text-sm text-muted">Despesas previstas</span>
-          <span class="font-medium text-red">${Utils.formatCurrency(s.expense.expected)}</span>
-        </div>
-        <div style="border-top:1px solid var(--border); padding-top:10px; margin-top:6px;" class="flex justify-between">
-          <span class="text-sm font-semibold">Saldo previsto</span>
-          <span class="font-bold" style="color:${s.net >= 0 ? 'var(--green)' : 'var(--red)'}">
-            ${Utils.formatCurrency(s.net)}
-          </span>
-        </div>
-      </div>
-    `;
-
-    // Draw donut chart
     if (cats.length > 0) {
-      drawDonut('donut-chart', cats.slice(0, 6));
+      const max = cats[0].total || 1;
+      document.getElementById('cat-list').innerHTML = cats.slice(0,5).map((c,i) => `
+        <div class="cat-row">
+          <div class="cat-icon" style="background:${c.color}22;">${c.icon || '💰'}</div>
+          <div class="cat-body">
+            <div class="cat-top">
+              <span class="cat-name">${c.name}</span>
+              <span class="cat-amt" style="color:${COLORS[i%COLORS.length]}">${Utils.formatCurrency(c.total)}</span>
+            </div>
+            <div class="bar-track"><div class="bar-fill" style="width:${Math.round((c.total/max)*100)}%;background:${COLORS[i%COLORS.length]};"></div></div>
+          </div>
+        </div>`).join('');
+    } else {
+      document.getElementById('cat-list').innerHTML = '<p style="font-size:12px;color:var(--text-3);">Sem lançamentos este mês</p>';
     }
   }
 
-  function drawDonut(canvasId, data) {
-    const canvas = document.getElementById(canvasId);
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    const total = data.reduce((s, d) => s + d.total, 0);
-    const cx = 55, cy = 55, r = 42, innerR = 26;
-    let angle = -Math.PI / 2;
-
-    ctx.clearRect(0, 0, 110, 110);
-    data.forEach(d => {
-      const slice = (d.total / total) * 2 * Math.PI;
-      ctx.beginPath();
-      ctx.moveTo(cx, cy);
-      ctx.arc(cx, cy, r, angle, angle + slice);
-      ctx.closePath();
-      ctx.fillStyle = d.color || '#6366F1';
-      ctx.fill();
-      angle += slice;
-    });
-
-    // Inner circle (donut hole)
-    ctx.beginPath();
-    ctx.arc(cx, cy, innerR, 0, 2 * Math.PI);
-    ctx.fillStyle = '#1E293B';
-    ctx.fill();
-  }
-
-  loadDashboard();
+  applyTheme();
+  load();
 </script>
 </body>
 </html>
