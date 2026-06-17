@@ -12,13 +12,18 @@
 
   <div class="page-hero">
     <div class="page-hero-row">
-      <div style="display:flex;align-items:center;gap:10px;">
-        <a href="dashboard.html" class="back-btn">‹</a>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <button class="menu-btn" onclick="openDrawer()"><i class="ti ti-menu-2"></i></button>
         <div>
           <h1 class="page-hero-title">Lançamentos</h1>
           <p class="page-hero-sub" id="month-label"></p>
         </div>
       </div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <button onclick="changeMonth(-1)" style="background:rgba(255,255,255,0.15);border:none;color:#fff;width:30px;height:30px;border-radius:9px;font-size:16px;cursor:pointer;">&#8249;</button>
+        <button onclick="changeMonth(1)" style="background:rgba(255,255,255,0.15);border:none;color:#fff;width:30px;height:30px;border-radius:9px;font-size:16px;cursor:pointer;">&#8250;</button>
+      </div>
+    </div>
       <div style="display:flex;align-items:center;gap:8px;">
         <button onclick="changeMonth(-1)" style="background:rgba(255,255,255,0.15);border:none;color:#fff;width:30px;height:30px;border-radius:9px;font-size:16px;cursor:pointer;">‹</button>
         <button onclick="changeMonth(1)" style="background:rgba(255,255,255,0.15);border:none;color:#fff;width:30px;height:30px;border-radius:9px;font-size:16px;cursor:pointer;">›</button>
@@ -124,6 +129,7 @@
       <input type="number" id="pay-amount" placeholder="0,00" step="0.01" min="0" oninput="calcPayDiff()">
     </div>
 
+    <!-- Diferença -->
     <div id="pay-diff-box" style="display:none;border-radius:var(--radius-sm);padding:12px;margin-bottom:16px;">
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <span style="font-size:12px;font-weight:700;" id="pay-diff-label"></span>
@@ -198,19 +204,21 @@
       <input type="date" id="d-date" onchange="checkRetroactive()">
     </div>
 
+    <!-- Campo retroativo — só aparece se data for anterior ao mês atual -->
     <div id="retroactive-section" style="display:none;background:var(--yellow-bg);border-radius:var(--radius-sm);padding:14px;margin-bottom:14px;border:0.5px solid #FCD34D;">
       <p style="font-size:12px;font-weight:700;color:#92400E;margin-bottom:4px;">📅 Parcelamento retroativo detectado</p>
       <p style="font-size:10px;color:#B45309;margin-bottom:12px;">As parcelas do passado serão marcadas como pagas (apenas histórico, sem afetar saldo). Informe a última que você pagou:</p>
       <div class="field" style="margin-bottom:0;">
         <label class="field-label">Última parcela paga (mês/ano)</label>
-        <input type="month" id="d-last-paid">
-        <p style="font-size:10px;color:#B45309;margin-top:4px;">Deixe em branco para marcar todas as passadas como histórico</p>
+        <input type="month" id="d-last-paid" placeholder="Ex: 2025-08">
+        <p style="font-size:10px;color:#B45309;margin-top:4px;">Deixe em branco se nenhuma foi paga ainda</p>
       </div>
     </div>
 
     <div class="field"><label class="field-label">Conta / Cartão</label><select id="d-account"><option value="">Sem conta</option></select></div>
     <div class="field"><label class="field-label">Categoria</label><select id="d-category"><option value="">Sem categoria</option></select></div>
 
+    <!-- Preview juros -->
     <div id="debt-preview" style="display:none;background:var(--bg-input);border-radius:var(--radius-sm);padding:14px;margin-bottom:14px;">
       <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
         <span style="font-size:11px;color:var(--text-3);">Total a pagar:</span>
@@ -314,22 +322,23 @@
     const recTag = (tx.is_recurring==true||tx.is_recurring==='TRUE') ? '<span class="badge" style="background:var(--accent-light);color:var(--accent-2);margin-left:4px;">🔄</span>' : '';
     const instTag = tx.installment_number ? `<span class="badge" style="background:#FEF3C7;color:#92400E;margin-left:4px;">📌 ${tx.installment_number}ª parc.</span>` : '';
 
+    // Show actual vs expected if paid with difference
     let amtHtml = '';
     if (tx.status==='paid' && tx.actual_amount && Number(tx.actual_amount) !== Number(tx.expected_amount)) {
       const diff = Number(tx.actual_amount) - Number(tx.expected_amount);
-      const diffColor = (tx.type==='expense' ? diff>0 : diff<0) ? 'var(--red)' : 'var(--green)';
-      const diffLabel = tx.type==='expense'
-        ? (diff>0 ? `+${Utils.formatCurrency(diff)} juros` : `${Utils.formatCurrency(Math.abs(diff))} desconto`)
-        : (diff>0 ? `+${Utils.formatCurrency(diff)} a mais` : `${Utils.formatCurrency(Math.abs(diff))} a menos`);
-      amtHtml = `<div class="tx-amt ${tx.type==='income'?'tx-pos':'tx-neg'}">${tx.type==='income'?'+':'-'}${Utils.formatCurrency(tx.actual_amount)}</div><div style="font-size:9px;color:${diffColor};">${diffLabel}</div>`;
+      const diffColor = diff > 0 ? 'var(--red)' : 'var(--green)';
+      const diffLabel = diff > 0 ? `+${Utils.formatCurrency(diff)} juros` : `${Utils.formatCurrency(Math.abs(diff))} desconto`;
+      amtHtml = `<div class="tx-amt ${tx.type==='income'?'tx-pos':'tx-neg'}">${tx.type==='income'?'+':'-'}${Utils.formatCurrency(tx.actual_amount)}</div>
+        <div style="font-size:9px;color:${diffColor};">${diffLabel}</div>`;
     } else {
       const amt = tx.status==='paid' ? Number(tx.actual_amount||tx.expected_amount) : Number(tx.expected_amount);
       amtHtml = `<div class="tx-amt ${tx.type==='income'?'tx-pos':'tx-neg'}">${tx.type==='income'?'+':'-'}${Utils.formatCurrency(amt)}</div>`;
     }
 
     const payBtn = tx.status==='pending'
-      ? `<button class="pay-btn" onclick="openPayModal('${tx.transaction_id}','${tx.account_id||''}',${tx.expected_amount},'${tx.type}','${tx.description.replace(/'/g,"\\'")}')">${tx.type==='income'?'Confirmar':'Pagar'}</button>`
-      : '';
+      ? `<button class="pay-btn" onclick="openPayModal('${tx.transaction_id}','${tx.account_id||''}',${tx.expected_amount},'${tx.type}','${tx.description.replace(/'/g,"\\'")}')">
+          ${tx.type==='income'?'Confirmar':'Pagar'}
+        </button>` : '';
 
     return `
       <div class="tx-card ${overdue&&tx.status!=='paid'?'overdue':''}">
@@ -343,6 +352,7 @@
       </div>`;
   }
 
+  // ── Pay modal ──────────────────────────────────────────
   function openPayModal(txId, accountId, expected, type, name) {
     document.getElementById('pay-tx-id').value = txId;
     document.getElementById('pay-account-id').value = accountId;
@@ -362,23 +372,53 @@
     const actual = parseFloat(document.getElementById('pay-amount').value)||0;
     const type = document.getElementById('pay-type').value;
     const box = document.getElementById('pay-diff-box');
-    if (actual > 0 && Math.abs(actual - expected) > 0.01) {
+
+    if (actual > 0 && actual !== expected) {
       const diff = actual - expected;
       const isExpense = type === 'expense';
-      const isBad = isExpense ? diff > 0 : diff < 0;
       box.style.display = 'block';
-      box.style.background = isBad ? 'var(--red-bg)' : 'var(--green-bg)';
-      box.style.border = isBad ? '0.5px solid #FECACA' : '0.5px solid #BBF7D0';
-      document.getElementById('pay-diff-label').textContent = isBad
-        ? (isExpense ? '💸 Juros / Multa' : '⚠ Recebi a menos')
-        : (isExpense ? '✅ Desconto' : '✅ Recebi a mais');
-      document.getElementById('pay-diff-label').style.color = isBad ? 'var(--red)' : 'var(--green)';
-      document.getElementById('pay-diff-val').textContent = (diff>0?'+':'') + Utils.formatCurrency(diff);
-      document.getElementById('pay-diff-val').style.color = isBad ? 'var(--red)' : 'var(--green)';
-      document.getElementById('pay-diff-desc').textContent = isBad
-        ? (isExpense ? 'Você pagou mais do que o previsto.' : 'Você recebeu menos do que o previsto.')
-        : (isExpense ? 'Você pagou menos do que o previsto.' : 'Você recebeu mais do que o previsto.');
-      document.getElementById('pay-diff-desc').style.color = isBad ? '#B91C1C' : '#166534';
+
+      if (isExpense) {
+        if (diff > 0) {
+          box.style.background = 'var(--red-bg)';
+          box.style.border = '0.5px solid #FECACA';
+          document.getElementById('pay-diff-label').textContent = '💸 Juros / Multa';
+          document.getElementById('pay-diff-label').style.color = 'var(--red)';
+          document.getElementById('pay-diff-val').textContent = '+' + Utils.formatCurrency(diff);
+          document.getElementById('pay-diff-val').style.color = 'var(--red)';
+          document.getElementById('pay-diff-desc').textContent = 'Você pagou mais do que o previsto.';
+          document.getElementById('pay-diff-desc').style.color = '#B91C1C';
+        } else {
+          box.style.background = 'var(--green-bg)';
+          box.style.border = '0.5px solid #BBF7D0';
+          document.getElementById('pay-diff-label').textContent = '✅ Desconto';
+          document.getElementById('pay-diff-label').style.color = 'var(--green)';
+          document.getElementById('pay-diff-val').textContent = Utils.formatCurrency(Math.abs(diff));
+          document.getElementById('pay-diff-val').style.color = 'var(--green)';
+          document.getElementById('pay-diff-desc').textContent = 'Você pagou menos do que o previsto.';
+          document.getElementById('pay-diff-desc').style.color = '#166534';
+        }
+      } else {
+        if (diff > 0) {
+          box.style.background = 'var(--green-bg)';
+          box.style.border = '0.5px solid #BBF7D0';
+          document.getElementById('pay-diff-label').textContent = '✅ Recebi a mais';
+          document.getElementById('pay-diff-label').style.color = 'var(--green)';
+          document.getElementById('pay-diff-val').textContent = '+' + Utils.formatCurrency(diff);
+          document.getElementById('pay-diff-val').style.color = 'var(--green)';
+          document.getElementById('pay-diff-desc').textContent = 'Você recebeu mais do que o previsto.';
+          document.getElementById('pay-diff-desc').style.color = '#166534';
+        } else {
+          box.style.background = 'var(--red-bg)';
+          box.style.border = '0.5px solid #FECACA';
+          document.getElementById('pay-diff-label').textContent = '⚠ Recebi a menos';
+          document.getElementById('pay-diff-label').style.color = 'var(--red)';
+          document.getElementById('pay-diff-val').textContent = Utils.formatCurrency(Math.abs(diff));
+          document.getElementById('pay-diff-val').style.color = 'var(--red)';
+          document.getElementById('pay-diff-desc').textContent = 'Você recebeu menos do que o previsto.';
+          document.getElementById('pay-diff-desc').style.color = '#B91C1C';
+        }
+      }
     } else {
       box.style.display = 'none';
     }
@@ -389,7 +429,7 @@
     const accountId = document.getElementById('pay-account-id').value;
     const date = document.getElementById('pay-date').value;
     const amount = parseFloat(document.getElementById('pay-amount').value);
-    if (!date||!amount) { Utils.toast('Preencha data e valor','error'); return; }
+    if (!date || !amount) { Utils.toast('Preencha data e valor','error'); return; }
     const btn = document.getElementById('pay-save-btn');
     btn.disabled=true; btn.textContent='Confirmando...';
     const res = await API.markPaid({transaction_id:txId, account_id:accountId, paid_date:date, actual_amount:amount});
@@ -398,9 +438,11 @@
     else Utils.toast(res.error||'Erro','error');
   }
 
+  // ── Type selector ──────────────────────────────────────
   function openTypeSelector() { document.getElementById('type-selector').classList.add('open'); }
   function closeTypeSelector() { document.getElementById('type-selector').classList.remove('open'); }
 
+  // ── Despesa / Receita ──────────────────────────────────
   function openModal(type) {
     closeTypeSelector(); txType = type;
     document.getElementById('tx-modal-title').textContent = type==='income'?'Nova Receita':'Nova Despesa';
@@ -421,6 +463,7 @@
     else Utils.toast(res.error||'Erro','error');
   }
 
+  // ── Cartão ────────────────────────────────────────────
   function openCardModal() {
     closeTypeSelector();
     document.getElementById('cm-date').value = new Date().toISOString().split('T')[0];
@@ -440,6 +483,7 @@
     else Utils.toast(res.error||'Erro','error');
   }
 
+  // ── Transferência ─────────────────────────────────────
   function openTransferModal() {
     closeTypeSelector();
     document.getElementById('tr-date').value = new Date().toISOString().split('T')[0];
@@ -473,6 +517,7 @@
     } else Utils.toast('Erro ao transferir','error');
   }
 
+  // ── Recorrência ───────────────────────────────────────
   function openRecurrenceModal() {
     closeTypeSelector(); setRecType('expense');
     document.getElementById('rec-modal').classList.add('open');
@@ -492,16 +537,21 @@
     const btn=document.getElementById('rec-save-btn'); btn.disabled=true; btn.textContent='Salvando...';
     const res=await API.createRecurrence({description:desc,type:recType,expected_amount:amount,recurrence_day:day,category_id:document.getElementById('rec-category').value,account_id:document.getElementById('rec-account').value,start_date:new Date().toISOString().split('T')[0]});
     btn.disabled=false; btn.textContent='Salvar Recorrência';
-    if (res.success) { await API.generateMonth(month); Utils.toast('✅ Recorrência salva!'); closeRecurrenceModal(); ['rec-desc','rec-amount','rec-day'].forEach(id=>document.getElementById(id).value=''); load(); }
-    else Utils.toast(res.error||'Erro','error');
+    if (res.success) {
+      await API.generateMonth(month);
+      Utils.toast('✅ Recorrência salva!'); closeRecurrenceModal(); ['rec-desc','rec-amount','rec-day'].forEach(id=>document.getElementById(id).value=''); load();
+    } else Utils.toast(res.error||'Erro','error');
   }
 
+  // ── Parcelamento ──────────────────────────────────────
   function checkRetroactive() {
     const dateVal = document.getElementById('d-date').value;
     if (!dateVal) return;
+    const firstMonth = dateVal.slice(0,7);
+    const currentMonth = Utils.currentMonth();
     const section = document.getElementById('retroactive-section');
-    section.style.display = dateVal.slice(0,7) < Utils.currentMonth() ? 'block' : 'none';
-    if (dateVal.slice(0,7) >= Utils.currentMonth()) document.getElementById('d-last-paid').value = '';
+    section.style.display = firstMonth < currentMonth ? 'block' : 'none';
+    if (firstMonth >= currentMonth) document.getElementById('d-last-paid').value = '';
   }
 
   function openDebtModal() {
@@ -533,12 +583,23 @@
     const accountId=accVal.startsWith('card:')?'':accVal, cardId=accVal.startsWith('card:')?accVal.replace('card:',''):'';
     const lastPaid=document.getElementById('d-last-paid').value||'';
     const btn=document.getElementById('d-save-btn'); btn.disabled=true; btn.textContent=`Criando ${totalInstall} parcelas...`;
-    const res=await API.createDebt({description:desc,original_amount:parseFloat(document.getElementById('d-original').value)||(totalInstall*installAmt),total_installments:totalInstall,installment_amount:installAmt,first_due_date:firstDate,last_paid_month:lastPaid,category_id:document.getElementById('d-category').value,account_id:accountId,card_id:cardId});
+    const res=await API.createDebt({
+      description:desc,
+      original_amount:parseFloat(document.getElementById('d-original').value)||(totalInstall*installAmt),
+      total_installments:totalInstall,
+      installment_amount:installAmt,
+      first_due_date:firstDate,
+      last_paid_month:lastPaid,
+      category_id:document.getElementById('d-category').value,
+      account_id:accountId,
+      card_id:cardId
+    });
     btn.disabled=false; btn.textContent='Criar Parcelas';
     if (res.success) {
-      const paidCount=res.data?.paid_count||0;
+      const paidCount = res.data?.paid_count || 0;
       Utils.toast(`✅ ${totalInstall} parcelas criadas!${paidCount>0?' '+paidCount+' marcadas como histórico.':''}`);
-      closeDebtModal(); ['d-desc','d-original','d-total','d-install','d-last-paid'].forEach(id=>document.getElementById(id).value='');
+      closeDebtModal();
+      ['d-desc','d-original','d-total','d-install','d-last-paid'].forEach(id=>document.getElementById(id).value='');
       document.getElementById('debt-preview').style.display='none';
       document.getElementById('retroactive-section').style.display='none';
       load();
