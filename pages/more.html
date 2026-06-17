@@ -10,8 +10,10 @@
 <div class="page">
 
   <div class="page-hero">
-    <div class="page-hero-row">
+    <div class="page-hero-row" style="gap:10px;">
       <div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;"><a href="dashboard.html" class="back-btn">&#8249;</a><div>
         <h1 class="page-hero-title">Menu</h1>
         <p class="page-hero-sub" id="user-greeting"></p>
       </div>
@@ -98,9 +100,11 @@
 <script src="../js/config.js"></script>
 <script src="../js/api.js"></script>
 <script src="../js/utils.js"></script>
+<script src="../js/nav.js"></script>
 <script>
   if (!Auth.requireAuth()) throw '';
   applyTheme();
+  injectNav('more.html');
   const user = Auth.getUser();
   if (user) document.getElementById('user-greeting').textContent = `Olá, ${user.name.split(' ')[0]}!`;
 </script>
