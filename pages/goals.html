@@ -11,16 +11,21 @@
 <div class="page">
 
   <div class="page-hero">
-    <div class="page-hero-row" style="gap:10px;">
-      <div>
+    <div class="page-hero-row">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <a href="dashboard.html" class="back-btn">‹</a>
+        <div>
+          <h1 class="page-hero-title">Metas</h1>
+          <p class="page-hero-sub">Seus objetivos financeiros</p>
+        </div>
       </div>
-      <div style="display:flex;align-items:center;gap:10px;"><a href="dashboard.html" class="back-btn">&#8249;</a><div><h1 class="page-hero-title">Metas</h1><p class="page-hero-sub">Seus objetivos financeiros</p></div>
       <button class="menu-btn" onclick="openDrawer()"><i class="ti ti-menu-2"></i></button>
     </div>
   </div>
 
   <div id="list-container" style="padding:14px;">
-    <div class="skeleton"></div><div class="skeleton" style="height:140px;"></div>
+    <div class="skeleton"></div>
+    <div class="skeleton" style="height:140px;"></div>
   </div>
 
 </div>
@@ -71,24 +76,38 @@
   async function load() {
     const res = await API.listGoals();
     goals = res.success ? res.data : [];
+
     if (goals.length === 0) {
-      document.getElementById('list-container').innerHTML = `<div class="empty-state"><div class="empty-icon">🎯</div><p class="empty-text">Defina suas metas financeiras</p><button class="btn btn-primary" style="max-width:220px;margin:0 auto;" onclick="openModal()">Criar primeira meta</button></div>`;
+      document.getElementById('list-container').innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">🎯</div>
+          <p class="empty-text">Defina suas metas financeiras</p>
+          <button class="btn btn-primary" style="max-width:220px;margin:0 auto;" onclick="openModal()">Criar primeira meta</button>
+        </div>`;
       return;
     }
+
     const active = goals.filter(g=>g.status!=='completed');
-    const done = goals.filter(g=>g.status==='completed');
+    const done   = goals.filter(g=>g.status==='completed');
+
     let html = active.map((g,i) => {
-      const curr = Number(g.current_amount)||0;
-      const target = Number(g.target_amount)||1;
+      const curr    = Number(g.current_amount)||0;
+      const target  = Number(g.target_amount)||1;
       const monthly = Number(g.monthly_contribution)||0;
-      const pct = Math.min(100, Math.round((curr/target)*100));
+      const pct     = Math.min(100, Math.round((curr/target)*100));
       const remaining = Math.max(0, target - curr);
-      const months = monthly > 0 ? Math.ceil(remaining/monthly) : null;
+      const months    = monthly > 0 ? Math.ceil(remaining/monthly) : null;
       return `
         <div class="gcard">
-          <div class="gcard-top"><span class="gcard-name">${g.name}</span><span class="gcard-pct">${pct}%</span></div>
+          <div class="gcard-top">
+            <span class="gcard-name">${g.name}</span>
+            <span class="gcard-pct">${pct}%</span>
+          </div>
           ${g.target_date ? `<p style="font-size:10px;color:var(--text-3);margin-bottom:8px;">📅 Meta: ${Utils.formatDate(g.target_date)}</p>` : ''}
-          <div class="gcard-amounts"><span class="gcard-curr">${Utils.formatCurrency(curr)}</span><span class="gcard-target">de ${Utils.formatCurrency(target)}</span></div>
+          <div class="gcard-amounts">
+            <span class="gcard-curr">${Utils.formatCurrency(curr)}</span>
+            <span class="gcard-target">de ${Utils.formatCurrency(target)}</span>
+          </div>
           <div class="gcard-prog"><div class="gcard-fill" style="width:${pct}%;background:${GOAL_GRADIENTS[i%GOAL_GRADIENTS.length]};"></div></div>
           <div class="gcard-footer">
             <span class="gcard-info">${months ? `~${months} meses restantes` : `${Utils.formatCurrency(remaining)} restante`}</span>
@@ -96,10 +115,21 @@
           </div>
         </div>`;
     }).join('');
+
     if (done.length > 0) {
       html += `<p style="font-size:11px;font-weight:700;color:var(--text-3);margin:16px 0 8px;text-transform:uppercase;letter-spacing:0.05em;">Concluídas</p>`;
-      html += done.map(g=>`<div class="gcard" style="opacity:0.7;border-color:var(--green-bg);"><div style="display:flex;align-items:center;gap:10px;"><span style="font-size:1.3rem;">✅</span><div><p style="font-size:13px;font-weight:600;color:var(--text);">${g.name}</p><p style="font-size:11px;color:var(--green);">Concluída! ${Utils.formatCurrency(g.target_amount)}</p></div></div></div>`).join('');
+      html += done.map(g=>`
+        <div class="gcard" style="opacity:0.7;border-color:var(--green-bg);">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="font-size:1.3rem;">✅</span>
+            <div>
+              <p style="font-size:13px;font-weight:600;color:var(--text);">${g.name}</p>
+              <p style="font-size:11px;color:var(--green);">Concluída! ${Utils.formatCurrency(g.target_amount)}</p>
+            </div>
+          </div>
+        </div>`).join('');
     }
+
     document.getElementById('list-container').innerHTML = html;
   }
 
@@ -120,21 +150,21 @@
     const newAmount = Math.min(selectedGoal.target, selectedGoal.curr + amount);
     const isComplete = newAmount >= selectedGoal.target;
     const btn = document.getElementById('add-btn');
-    btn.disabled = true; btn.textContent = 'Salvando...';
-    const res = await API.updateGoal({ goal_id:selectedGoal.goalId, current_amount:newAmount, status:isComplete?'completed':'active' });
-    btn.disabled = false; btn.textContent = '💰 Adicionar';
+    btn.disabled=true; btn.textContent='Salvando...';
+    const res = await API.updateGoal({goal_id:selectedGoal.goalId, current_amount:newAmount, status:isComplete?'completed':'active'});
+    btn.disabled=false; btn.textContent='💰 Adicionar';
     if (res.success) { Utils.toast(isComplete?'🎉 Meta concluída!':'💰 Meta atualizada!'); closeAddModal(); load(); }
     else Utils.toast(res.error||'Erro','error');
   }
 
   async function saveGoal() {
-    const name = document.getElementById('g-name').value.trim();
+    const name   = document.getElementById('g-name').value.trim();
     const target = parseFloat(document.getElementById('g-target').value);
     if (!name || !target) { Utils.toast('Preencha nome e valor alvo','error'); return; }
     const btn = document.getElementById('save-btn');
-    btn.disabled = true; btn.textContent = 'Salvando...';
-    const res = await API.createGoal({ name, target_amount:target, monthly_contribution:parseFloat(document.getElementById('g-monthly').value)||0, target_date:document.getElementById('g-date').value, current_amount:0 });
-    btn.disabled = false; btn.textContent = 'Criar Meta';
+    btn.disabled=true; btn.textContent='Salvando...';
+    const res = await API.createGoal({name, target_amount:target, monthly_contribution:parseFloat(document.getElementById('g-monthly').value)||0, target_date:document.getElementById('g-date').value, current_amount:0});
+    btn.disabled=false; btn.textContent='Criar Meta';
     if (res.success) { Utils.toast('🎯 Meta criada!'); closeModal(); ['g-name','g-target','g-monthly','g-date'].forEach(id=>document.getElementById(id).value=''); load(); }
     else Utils.toast(res.error||'Erro','error');
   }
