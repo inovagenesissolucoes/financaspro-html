@@ -443,10 +443,13 @@
 
   async function refreshAll() {
     const btn = document.getElementById('refresh-btn');
-    btn.innerHTML = '<i class='ti ti-loader-2' style='font-size:18px;'></i>'; btn.style.opacity='0.6';
+    const icon = btn.querySelector('i');
+    icon.className = 'ti ti-loader-2';
+    btn.style.opacity = '0.6';
     await Promise.all([loadAccounts(), loadCategories()]);
-    btn.innerHTML = '<i class='ti ti-refresh' style='font-size:18px;'></i>'; btn.style.opacity='1';
-    Utils.toast('✅ Dados atualizados!');
+    icon.className = 'ti ti-refresh';
+    btn.style.opacity = '1';
+    Utils.toast('\u2705 Dados atualizados!');
   }
 
   loadAccounts();
