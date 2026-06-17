@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>FinançasPRO — Recorrências</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<div class="page">
+
+  <div class="page-hero">
+    <div class="page-hero-row">
+      <div><h1 class="page-hero-title">Recorrências</h1><p class="page-hero-sub">Contas fixas e receitas mensais</p></div>
+    </div>
+  </div>
+
+  <!-- Gerar mês atual -->
+  <div style="padding:14px 14px 0;">
+    <div style="background:var(--accent-light);border-radius:var(--radius);padding:14px;border:0.5px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <p style="font-size:12px;font-weight:700;color:var(--accent);">Gerar lançamentos do mês</p>
+        <p style="font-size:10px;color:var(--text-3);margin-top:2px;" id="gen-month-label"></p>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="generateMonth()" id="gen-btn">Gerar agora</button>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Despesas fixas -->
+  <div class="sec">
+    <div class="sec-hdr">
+      <span class="sec-title">📤 Despesas Fixas</span>
+      <button class="btn btn-sm btn-primary" style="width:auto;" onclick="openModal('expense')">+ Nova</button>
+    </div>
+    <div id="expense-list"><div class="skeleton"></div></div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Receitas recorrentes -->
+  <div class="sec sec-last">
+    <div class="sec-hdr">
+      <span class="sec-title">📥 Receitas Recorrentes</span>
+      <button class="btn btn-sm btn-primary" style="width:auto;" onclick="openModal('income')">+ Nova</button>
+    </div>
+    <div id="income-list"><div class="skeleton"></div></div>
+  </div>
+
+</div>
+
+<!-- Bottom nav -->
+<div class="bnav-wrap">
+  <div class="bnav">
+    <a href="dashboard.html" class="ntab"><i class="ti ti-home"></i><span>Início</span></a>
+    <a href="transactions.html" class="ntab"><i class="ti ti-list"></i><span>Lançamentos</span></a>
+    <div class="ncenter"><button class="fab-nav" onclick="openModal('expense')"><i class="ti ti-plus"></i></button></div>
+    <a href="cards.html" class="ntab"><i class="ti ti-credit-card"></i><span>Cartões</span></a>
+    <a href="more.html" class="ntab"><i class="ti ti-dots"></i><span>Mais</span></a>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header"><span class="modal-title" id="modal-title">Nova Recorrência</span><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <input type="hidden" id="rec-type" value="expense">
+    <div class="field"><label class="field-label">Descrição *</label><input type="text" id="rec-desc" placeholder="Ex: Aluguel, Salário, Netflix..."></div>
+    <div class="field"><label class="field-label">Valor esperado (R$) *</label><input type="number" id="rec-amount" placeholder="0,00" step="0.01"></div>
+    <div class="field"><label class="field-label">Dia do mês *</label><input type="number" id="rec-day" placeholder="Ex: 5 = todo dia 5" min="1" max="31"></div>
+    <div class="field"><label class="field-label">Categoria</label><select id="rec-category"><option value="">Sem categoria</option></select></div>
+    <div class="field"><label class="field-label">Conta</label><select id="rec-account"><option value="">Sem conta</option></select></div>
+    <div class="field"><label class="field-label">Data de início</label><input type="date" id="rec-start"></div>
+    <button class="btn btn-primary" id="rec-save-btn" onclick="saveRecurrence()">Salvar Recorrência</button>
+  </div>
+</div>
+
+<script src="../js/config.js"></script>
+<script src="../js/api.js"></script>
+<script src="../js/utils.js"></script>
+<script>
+  if (!Auth.requireAuth()) throw '';
+  applyTheme();
+
+  let recType = 'expense';
+  let categories = [], accounts = [];
+
+  document.getElementById('gen-month-label').textContent = Utils.formatMonth(Utils.getActiveMonth());
+
+  async function load() {
+    const [recRes, catRes, accRes] = await Promise.all([API.listRecurrences(), API.listCategories(), API.listAccounts()]);
+    categories = catRes.success ? catRes.data : [];
+    accounts = accRes.success ? accRes.data : [];
+
+    const recs = recRes.success ? recRes.data : [];
+    const expenses = recs.filter(r => r.type === 'expense');
+    const incomes  = recs.filter(r => r.type === 'income');
+
+    const renderRec = r => {
+      const cat = categories.find(c => c.category_id === r.category_id);
+      const acc = accounts.find(a => a.account_id === r.account_id);
+      return `
+        <div style="display:flex;align-items:center;gap:12px;padding:11px;background:var(--bg-card);border-radius:var(--radius);border:0.5px solid var(--border);margin-bottom:8px;">
+          <div style="width:38px;height:38px;border-radius:12px;background:${cat?.color||'#6D28D9'}22;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;">${cat?.icon||'🔄'}</div>
+          <div style="flex:1;min-width:0;">
+            <p style="font-size:13px;font-weight:600;color:var(--text);">${r.description}</p>
+            <p style="font-size:10px;color:var(--text-3);">Todo dia ${r.recurrence_day}${acc?' · '+acc.name:''}</p>
+          </div>
+          <div style="text-align:right;">
+            <p style="font-size:13px;font-weight:700;color:${r.type==='income'?'var(--green)':'var(--red)'};">${r.type==='income'?'+':'-'}${Utils.formatCurrency(r.expected_amount)}</p>
+            <p style="font-size:9px;color:var(--text-3);">mensal</p>
+          </div>
+        </div>`;
+    };
+
+    document.getElementById('expense-list').innerHTML = expenses.length > 0 ? expenses.map(renderRec).join('') : '<p class="text-muted text-xs" style="padding:8px 0;">Nenhuma despesa fixa cadastrada.</p>';
+    document.getElementById('income-list').innerHTML  = incomes.length  > 0 ? incomes.map(renderRec).join('')  : '<p class="text-muted text-xs" style="padding:8px 0;">Nenhuma receita recorrente cadastrada.</p>';
+  }
+
+  async function generateMonth() {
+    const btn = document.getElementById('gen-btn');
+    btn.disabled = true; btn.textContent = 'Gerando...';
+    const res = await API.generateMonth(Utils.getActiveMonth());
+    btn.disabled = false; btn.textContent = 'Gerar agora';
+    if (res.success) {
+      const count = res.data?.count || res.count || 0;
+      Utils.toast(count > 0 ? `✅ ${count} lançamento(s) gerado(s)!` : '✅ Lançamentos já gerados para este mês!');
+    } else Utils.toast(res.error||'Erro ao gerar','error');
+  }
+
+  function openModal(type) {
+    recType = type;
+    document.getElementById('rec-type').value = type;
+    document.getElementById('modal-title').textContent = type === 'expense' ? 'Nova Despesa Fixa' : 'Nova Receita Recorrente';
+    document.getElementById('rec-start').value = new Date().toISOString().split('T')[0];
+
+    const catSel = document.getElementById('rec-category');
+    const accSel = document.getElementById('rec-account');
+    catSel.innerHTML = '<option value="">Sem categoria</option>' + categories.filter(c=>c.type===type).map(c=>`<option value="${c.category_id}">${c.icon||''} ${c.name}</option>`).join('');
+    accSel.innerHTML = '<option value="">Sem conta</option>' + accounts.map(a=>`<option value="${a.account_id}">${a.name}</option>`).join('');
+
+    document.getElementById('modal-overlay').classList.add('open');
+  }
+  function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
+
+  async function saveRecurrence() {
+    const desc = document.getElementById('rec-desc').value.trim();
+    const amount = parseFloat(document.getElementById('rec-amount').value);
+    const day = parseInt(document.getElementById('rec-day').value);
+    if (!desc || !amount || !day) { Utils.toast('Preencha descrição, valor e dia','error'); return; }
+    const btn = document.getElementById('rec-save-btn');
+    btn.disabled = true; btn.textContent = 'Salvando...';
+    const res = await API.createRecurrence({
+      description: desc, type: recType,
+      expected_amount: amount, recurrence_day: day,
+      category_id: document.getElementById('rec-category').value,
+      account_id: document.getElementById('rec-account').value,
+      start_date: document.getElementById('rec-start').value
+    });
+    btn.disabled = false; btn.textContent = 'Salvar Recorrência';
+    if (res.success) { Utils.toast('✅ Recorrência salva!'); closeModal(); ['rec-desc','rec-amount','rec-day'].forEach(id=>document.getElementById(id).value=''); load(); }
+    else Utils.toast(res.error||'Erro','error');
+  }
+
+  load();
+</script>
+</body>
+</html>
