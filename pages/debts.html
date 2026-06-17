@@ -11,32 +11,17 @@
 <div class="page">
 
   <div class="page-hero">
-    <div class="page-hero-row" style="gap:10px;">
-      <div>
+    <div class="page-hero-row">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <button class="menu-btn" onclick="openDrawer()"><i class="ti ti-menu-2"></i></button>
+        <div>
+          <h1 class="page-hero-title">Dívidas</h1>
+          <p class="page-hero-sub">Parcelamentos ativos</p>
+        </div>
       </div>
-      <div style="display:flex;align-items:center;gap:10px;"><a href="dashboard.html" class="back-btn">&#8249;</a><div><h1 class="page-hero-title">Dívidas</h1><p class="page-hero-sub">Parcelamentos ativos</p></div>
-    </div>
-    <div class="page-hero-pills">
-      <div class="ph-pill"><div class="ph-pill-lbl">Total restante</div><div class="ph-pill-val neg" id="total-remaining">R$ 0</div></div>
-      <div class="ph-pill"><div class="ph-pill-lbl">Em juros</div><div class="ph-pill-val" style="color:#FCD34D;" id="total-interest">R$ 0</div></div>
-      <button class="menu-btn" onclick="openDrawer()"><i class="ti ti-menu-2"></i></button>
     </div>
   </div>
 
-  <div style="padding:14px 14px 0;" id="plan-btns" style="display:none;">
-    <div class="plan-btns">
-      <button class="plan-btn plan-avalanche" onclick="loadPlan('avalanche')">🏔 Avalanche</button>
-      <button class="plan-btn plan-snowball" onclick="loadPlan('snowball')">⛄ Bola de Neve</button>
-    </div>
-  </div>
-
-  <div id="plan-container" style="padding:0 14px;"></div>
-
-  <div id="list-container" style="padding:14px;">
-    <div class="skeleton"></div><div class="skeleton" style="height:120px;"></div>
-  </div>
-
-</div>
 
 <div class="bnav-wrap">
   <div class="bnav">
