@@ -7,10 +7,23 @@
   <link rel="stylesheet" href="../css/style.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
   <style>
-    .color-opt { width:34px;height:34px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:all 0.15s;display:inline-block;flex-shrink:0; }
-    .color-opt.selected { border-color:#fff;box-shadow:0 0 0 2px var(--accent); }
-    .icon-opt { cursor:pointer;padding:5px;border-radius:8px;border:2px solid transparent;font-size:22px;display:inline-flex;align-items:center;justify-content:center; }
-    .icon-opt.selected { background:var(--accent-light);border-color:var(--accent-2); }
+    .color-opt{width:34px;height:34px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:all 0.15s;display:inline-block;flex-shrink:0;}
+    .color-opt.selected{border-color:#fff;box-shadow:0 0 0 2px var(--accent);}
+    .icon-opt{cursor:pointer;padding:5px;border-radius:8px;border:2px solid transparent;font-size:22px;display:inline-flex;align-items:center;justify-content:center;}
+    .icon-opt.selected{background:var(--accent-light);border-color:var(--accent-2);}
+    .item-card{background:var(--bg-card);border-radius:var(--radius);border:0.5px solid var(--border);padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:all 0.15s;}
+    .item-card:active{opacity:0.8;}
+    .action-sheet{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:400;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.2s;}
+    .action-sheet.open{opacity:1;pointer-events:all;}
+    .action-sheet-inner{background:var(--bg-card);border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:20px;transform:translateY(100%);transition:transform 0.25s ease;}
+    .action-sheet.open .action-sheet-inner{transform:translateY(0);}
+    .action-btn{width:100%;padding:14px;border-radius:var(--radius-sm);border:none;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:8px;text-align:left;display:flex;align-items:center;gap:12px;}
+    .action-btn-edit{background:var(--accent-light);color:var(--accent-2);}
+    .action-btn-delete{background:var(--red-bg);color:var(--red);}
+    .action-btn-cancel{background:var(--bg-input);color:var(--text-3);}
+    .confirm-modal{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity 0.2s;}
+    .confirm-modal.open{opacity:1;pointer-events:all;}
+    .confirm-box{background:var(--bg-card);border-radius:20px;padding:24px;width:100%;max-width:340px;}
   </style>
 </head>
 <body>
@@ -79,6 +92,7 @@
 
 </div>
 
+<!-- Bottom nav -->
 <div class="bnav-wrap">
   <div class="bnav">
     <a href="dashboard.html" class="ntab"><i class="ti ti-home"></i><span>Início</span></a>
@@ -89,11 +103,12 @@
   </div>
 </div>
 
-<!-- Modal Nova Conta -->
+<!-- Modal Nova/Editar Conta -->
 <div class="modal-overlay" id="account-modal" onclick="if(event.target===this)closeAccountModal()">
   <div class="modal">
     <div class="modal-handle"></div>
-    <div class="modal-header"><span class="modal-title">Nova Conta</span><button class="modal-close" onclick="closeAccountModal()">✕</button></div>
+    <div class="modal-header"><span class="modal-title" id="acc-modal-title">Nova Conta</span><button class="modal-close" onclick="closeAccountModal()">✕</button></div>
+    <input type="hidden" id="acc-id">
     <div class="field"><label class="field-label">Nome da conta *</label><input type="text" id="acc-name" placeholder="Ex: Nubank, Inter, Carteira..."></div>
     <div class="field">
       <label class="field-label">Tipo</label>
@@ -107,21 +122,20 @@
     </div>
     <div class="field">
       <label class="field-label">Saldo inicial (R$)</label>
-      <input type="text" id="acc-balance" placeholder="0,00" inputmode="decimal"
-        oninput="currencyInput(this)" onblur="currencyBlur(this)">
-      <p style="font-size:10px;color:var(--text-3);margin-top:4px;">Use vírgula ou ponto decimal. Ex: 1.500,00 ou 1500.00</p>
+      <input type="text" id="acc-balance" placeholder="0,00" inputmode="decimal" oninput="currencyInput(this)" onblur="currencyBlur(this)">
+      <p style="font-size:10px;color:var(--text-3);margin-top:4px;">Aceita vírgula ou ponto: 1.500,00 ou 1500.00</p>
     </div>
     <div class="field">
       <label class="field-label">Cor</label>
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;">
-        <div class="color-opt selected" style="background:#6D28D9;" data-color="#6D28D9" onclick="selectAccColor(this)"></div>
-        <div class="color-opt" style="background:#0369A1;" data-color="#0369A1" onclick="selectAccColor(this)"></div>
-        <div class="color-opt" style="background:#065F46;" data-color="#065F46" onclick="selectAccColor(this)"></div>
-        <div class="color-opt" style="background:#BE185D;" data-color="#BE185D" onclick="selectAccColor(this)"></div>
-        <div class="color-opt" style="background:#C2410C;" data-color="#C2410C" onclick="selectAccColor(this)"></div>
-        <div class="color-opt" style="background:#1D4ED8;" data-color="#1D4ED8" onclick="selectAccColor(this)"></div>
-        <div class="color-opt" style="background:#6B7280;" data-color="#6B7280" onclick="selectAccColor(this)"></div>
-        <div class="color-opt" style="background:#0F766E;" data-color="#0F766E" onclick="selectAccColor(this)"></div>
+        <div class="color-opt acc-color selected" style="background:#6D28D9;" data-color="#6D28D9" onclick="selectAccColor(this)"></div>
+        <div class="color-opt acc-color" style="background:#0369A1;" data-color="#0369A1" onclick="selectAccColor(this)"></div>
+        <div class="color-opt acc-color" style="background:#065F46;" data-color="#065F46" onclick="selectAccColor(this)"></div>
+        <div class="color-opt acc-color" style="background:#BE185D;" data-color="#BE185D" onclick="selectAccColor(this)"></div>
+        <div class="color-opt acc-color" style="background:#C2410C;" data-color="#C2410C" onclick="selectAccColor(this)"></div>
+        <div class="color-opt acc-color" style="background:#1D4ED8;" data-color="#1D4ED8" onclick="selectAccColor(this)"></div>
+        <div class="color-opt acc-color" style="background:#6B7280;" data-color="#6B7280" onclick="selectAccColor(this)"></div>
+        <div class="color-opt acc-color" style="background:#0F766E;" data-color="#0F766E" onclick="selectAccColor(this)"></div>
       </div>
       <input type="hidden" id="acc-color" value="#6D28D9">
     </div>
@@ -129,12 +143,13 @@
   </div>
 </div>
 
-<!-- Modal Nova Categoria -->
+<!-- Modal Nova/Editar Categoria -->
 <div class="modal-overlay" id="cat-modal" onclick="if(event.target===this)closeCatModal()">
   <div class="modal">
     <div class="modal-handle"></div>
     <div class="modal-header"><span class="modal-title" id="cat-modal-title">Nova Categoria</span><button class="modal-close" onclick="closeCatModal()">✕</button></div>
     <input type="hidden" id="cat-type" value="expense">
+    <input type="hidden" id="cat-id">
     <div class="field"><label class="field-label">Nome *</label><input type="text" id="cat-name" placeholder="Ex: Alimentação, Salário..."></div>
     <div class="field"><label class="field-label">Subcategoria</label><input type="text" id="cat-sub" placeholder="Ex: Mercado, Restaurante..."></div>
     <div class="field">
@@ -160,10 +175,39 @@
     </div>
     <div class="field">
       <label class="field-label">Limite mensal (R$)</label>
-      <input type="text" id="cat-limit" placeholder="0 = sem limite" inputmode="decimal"
-        oninput="currencyInput(this)" onblur="currencyBlur(this)">
+      <input type="text" id="cat-limit" placeholder="0 = sem limite" inputmode="decimal" oninput="currencyInput(this)" onblur="currencyBlur(this)">
+      <p style="font-size:10px;color:var(--text-3);margin-top:4px;">💡 Se definido, o app alerta quando seus gastos nessa categoria ultrapassarem esse valor no mês.</p>
     </div>
     <button class="btn btn-primary" id="cat-save-btn" onclick="saveCategory()">Salvar Categoria</button>
+  </div>
+</div>
+
+<!-- Action sheet (editar/excluir) -->
+<div class="action-sheet" id="action-sheet" onclick="if(event.target===this)closeActionSheet()">
+  <div class="action-sheet-inner">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding-bottom:16px;border-bottom:0.5px solid var(--border);">
+      <div id="as-icon" style="width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;"></div>
+      <div>
+        <p id="as-name" style="font-size:14px;font-weight:700;color:var(--text);"></p>
+        <p id="as-sub" style="font-size:11px;color:var(--text-3);margin-top:2px;"></p>
+      </div>
+    </div>
+    <button class="action-btn action-btn-edit" onclick="editItem()">✏️ Editar</button>
+    <button class="action-btn action-btn-delete" onclick="confirmDelete()">🗑️ Excluir</button>
+    <button class="action-btn action-btn-cancel" onclick="closeActionSheet()">✕ Cancelar</button>
+  </div>
+</div>
+
+<!-- Confirm delete modal -->
+<div class="confirm-modal" id="confirm-modal">
+  <div class="confirm-box">
+    <div style="text-align:center;margin-bottom:16px;">
+      <div style="font-size:40px;margin-bottom:10px;" id="confirm-icon">⚠️</div>
+      <p style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px;" id="confirm-title">Excluir item?</p>
+      <p style="font-size:13px;color:var(--text-3);line-height:1.5;" id="confirm-msg">Tem certeza?</p>
+    </div>
+    <button class="btn" style="background:var(--red);color:#fff;margin-bottom:8px;" id="confirm-ok-btn" onclick="doDelete()">Sim, excluir</button>
+    <button class="btn btn-ghost" onclick="closeConfirm()">Cancelar</button>
   </div>
 </div>
 
@@ -176,7 +220,6 @@
   applyTheme();
   injectNav('settings.html');
 
-  // Perfil
   const user = Auth.getUser();
   if (user) {
     document.getElementById('pg-name').textContent = user.name;
@@ -184,162 +227,215 @@
     document.getElementById('pg-avatar').textContent = user.name.split(' ').map(n=>n[0]).slice(0,2).join('');
   }
 
-  // ── Currency input helpers ─────────────────────────────
-  function currencyInput(el) {
-    // Allow only digits, comma and dot
-    let v = el.value.replace(/[^\d.,]/g, '');
-    el.value = v;
-  }
+  let currentItem = null; // { type: 'account'|'category', data: {...} }
+  let allAccounts = [], allCategories = [];
 
+  // ── Currency helpers ───────────────────────────────────
+  function currencyInput(el) { el.value = el.value.replace(/[^\d.,]/g,''); }
   function currencyBlur(el) {
-    let v = el.value.trim();
-    if (!v) return;
-    const num = parseCurrency(v);
-    if (!isNaN(num) && num > 0) {
-      el.value = num.toFixed(2).replace('.', ',');
-    } else {
-      el.value = '';
-    }
+    const num = parseCurrency(el.value);
+    el.value = num > 0 ? num.toFixed(2).replace('.',',') : '';
   }
-
   function parseCurrency(val) {
     if (!val) return 0;
     let v = val.trim();
-    // Format "1.234,56" → has both dot and comma
-    if (v.includes('.') && v.includes(',')) {
-      // Dot is thousand separator, comma is decimal
-      v = v.replace(/\./g, '').replace(',', '.');
-    } else if (v.includes(',')) {
-      // Only comma → decimal separator
-      v = v.replace(',', '.');
-    }
-    // else only dot → already valid float
-    return parseFloat(v) || 0;
+    if (v.includes('.')&&v.includes(',')) v=v.replace(/\./g,'').replace(',','.');
+    else if (v.includes(',')) v=v.replace(',','.');
+    return parseFloat(v)||0;
   }
 
   // ── Icon picker ────────────────────────────────────────
-  const icons = ['🛒','🍽️','🚗','🚌','⛽','🏠','🏢','💡','💧','📱','🎬','🎮','✈️','🏥','💊','📚','🎓','💼','💰','📈','🎁','🐾','👔','👟','🍺','🏋️','💇','🐶','🔧','🎵','🎯','🍕','☕','🛁','🐱','🏦','🚿','🏪'];
-  document.getElementById('icon-picker').innerHTML = icons.map(i =>
-    `<span class="icon-opt" onclick="selectIcon(this,'${i}')">${i}</span>`
-  ).join('');
+  const icons=['🛒','🍽️','🚗','🚌','⛽','🏠','🏢','💡','💧','📱','🎬','🎮','✈️','🏥','💊','📚','🎓','💼','💰','📈','🎁','🐾','👔','👟','🍺','🏋️','💇','🐶','🔧','🎵','🎯','🍕','☕','🛁','🏦','🚿','🏪','🎪','🧴','🍎'];
+  document.getElementById('icon-picker').innerHTML = icons.map(i=>`<span class="icon-opt" onclick="selectIcon(this,'${i}')">${i}</span>`).join('');
 
-  function selectIcon(el, icon) {
-    document.querySelectorAll('.icon-opt').forEach(e => e.classList.remove('selected'));
-    el.classList.add('selected');
-    document.getElementById('cat-icon').value = icon;
-  }
+  function selectIcon(el,icon) { document.querySelectorAll('.icon-opt').forEach(e=>e.classList.remove('selected')); el.classList.add('selected'); document.getElementById('cat-icon').value=icon; }
+  function selectAccColor(el) { document.querySelectorAll('.acc-color').forEach(e=>e.classList.remove('selected')); el.classList.add('selected'); document.getElementById('acc-color').value=el.dataset.color; }
+  function selectCatColor(el) { document.querySelectorAll('.cat-color').forEach(e=>e.classList.remove('selected')); el.classList.add('selected'); document.getElementById('cat-color').value=el.dataset.color; }
 
-  function selectAccColor(el) {
-    document.querySelectorAll('.color-opt:not(.cat-color)').forEach(e => e.classList.remove('selected'));
-    el.classList.add('selected');
-    document.getElementById('acc-color').value = el.dataset.color;
-  }
+  const typeLabel={checking:'Conta corrente',savings:'Poupança',wallet:'Carteira',investment:'Investimento',other:'Outro'};
 
-  function selectCatColor(el) {
-    document.querySelectorAll('.cat-color').forEach(e => e.classList.remove('selected'));
-    el.classList.add('selected');
-    document.getElementById('cat-color').value = el.dataset.color;
-  }
-
-  // ── Load data ──────────────────────────────────────────
-  const typeLabel = {checking:'Conta corrente',savings:'Poupança',wallet:'Carteira',investment:'Investimento',other:'Outro'};
-
+  // ── Load ───────────────────────────────────────────────
   async function loadAccounts() {
     const res = await API.listAccounts();
-    const accounts = res.success ? res.data : [];
-    if (accounts.length === 0) {
-      document.getElementById('accounts-list').innerHTML = '<p style="font-size:12px;color:var(--text-3);padding:8px 0;">Nenhuma conta. Crie a primeira!</p>';
+    allAccounts = res.success ? res.data : [];
+    if (allAccounts.length===0) {
+      document.getElementById('accounts-list').innerHTML='<p style="font-size:12px;color:var(--text-3);padding:8px 0;">Nenhuma conta. Crie a primeira!</p>';
       return;
     }
-    document.getElementById('accounts-list').innerHTML = accounts.map(a => `
-      <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:0.5px solid var(--border);">
+    document.getElementById('accounts-list').innerHTML = allAccounts.map(a=>`
+      <div class="item-card" onclick="openActionSheet('account','${a.account_id}')">
         <div style="width:40px;height:40px;border-radius:12px;background:${a.color||'#6D28D9'};display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">🏦</div>
         <div style="flex:1;">
           <p style="font-size:13px;font-weight:600;color:var(--text);">${a.name}</p>
           <p style="font-size:10px;color:var(--text-3);">${typeLabel[a.type]||a.type}</p>
         </div>
-        <p style="font-size:13px;font-weight:700;color:${Number(a.current_balance)>=0?'var(--green)':'var(--red)'};">${Utils.formatCurrency(a.current_balance)}</p>
+        <div style="text-align:right;">
+          <p style="font-size:13px;font-weight:700;color:${Number(a.current_balance)>=0?'var(--green)':'var(--red)'};">${Utils.formatCurrency(a.current_balance)}</p>
+          <p style="font-size:10px;color:var(--text-3);margin-top:2px;">›</p>
+        </div>
       </div>`).join('');
   }
 
   async function loadCategories() {
     const res = await API.listCategories();
-    const cats = res.success ? res.data : [];
-    const expense = cats.filter(c => c.type === 'expense');
-    const income  = cats.filter(c => c.type === 'income');
+    allCategories = res.success ? res.data : [];
+    const expense = allCategories.filter(c=>c.type==='expense');
+    const income  = allCategories.filter(c=>c.type==='income');
 
-    const renderCat = c => `
-      <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:0.5px solid var(--border);">
-        <div style="width:34px;height:34px;border-radius:10px;background:${c.color}22;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">${c.icon||'💰'}</div>
+    const renderCat = c=>`
+      <div class="item-card" onclick="openActionSheet('category','${c.category_id}')">
+        <div style="width:38px;height:38px;border-radius:11px;background:${c.color}22;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;">${c.icon||'💰'}</div>
         <div style="flex:1;">
-          <p style="font-size:12px;font-weight:600;color:var(--text);">${c.name}${c.subcategory?` <span style="font-weight:400;color:var(--text-3);">· ${c.subcategory}</span>`:''}</p>
-          ${Number(c.budget_limit)>0?`<p style="font-size:10px;color:var(--text-3);">Limite: ${Utils.formatCurrency(c.budget_limit)}</p>`:''}
+          <p style="font-size:13px;font-weight:600;color:var(--text);">${c.name}${c.subcategory?` <span style="font-weight:400;color:var(--text-3);">· ${c.subcategory}</span>`:''}</p>
+          ${Number(c.budget_limit)>0?`<p style="font-size:10px;color:var(--text-3);">Limite: ${Utils.formatCurrency(c.budget_limit)}/mês</p>`:''}
         </div>
-        <div style="width:10px;height:10px;border-radius:50%;background:${c.color};flex-shrink:0;"></div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:10px;height:10px;border-radius:50%;background:${c.color};"></div>
+          <span style="color:var(--text-3);font-size:14px;">›</span>
+        </div>
       </div>`;
 
-    document.getElementById('expense-cats-list').innerHTML = expense.length > 0
-      ? expense.map(renderCat).join('')
-      : '<p style="font-size:12px;color:var(--text-3);padding:8px 0;">Nenhuma categoria de despesa.</p>';
+    document.getElementById('expense-cats-list').innerHTML = expense.length>0 ? expense.map(renderCat).join('') : '<p style="font-size:12px;color:var(--text-3);padding:8px 0;">Nenhuma categoria de despesa.</p>';
+    document.getElementById('income-cats-list').innerHTML  = income.length>0  ? income.map(renderCat).join('')  : '<p style="font-size:12px;color:var(--text-3);padding:8px 0;">Nenhuma categoria de receita.</p>';
+  }
 
-    document.getElementById('income-cats-list').innerHTML = income.length > 0
-      ? income.map(renderCat).join('')
-      : '<p style="font-size:12px;color:var(--text-3);padding:8px 0;">Nenhuma categoria de receita.</p>';
+  // ── Action sheet ───────────────────────────────────────
+  function openActionSheet(type, id) {
+    if (type==='account') {
+      const acc = allAccounts.find(a=>a.account_id===id);
+      if (!acc) return;
+      currentItem = { type:'account', data:acc };
+      document.getElementById('as-icon').innerHTML = `<div style="width:44px;height:44px;border-radius:12px;background:${acc.color||'#6D28D9'};display:flex;align-items:center;justify-content:center;font-size:20px;">🏦</div>`;
+      document.getElementById('as-name').textContent = acc.name;
+      document.getElementById('as-sub').textContent = typeLabel[acc.type]||acc.type;
+    } else {
+      const cat = allCategories.find(c=>c.category_id===id);
+      if (!cat) return;
+      currentItem = { type:'category', data:cat };
+      document.getElementById('as-icon').innerHTML = `<div style="width:44px;height:44px;border-radius:12px;background:${cat.color}22;display:flex;align-items:center;justify-content:center;font-size:20px;">${cat.icon||'💰'}</div>`;
+      document.getElementById('as-name').textContent = cat.name + (cat.subcategory?' · '+cat.subcategory:'');
+      document.getElementById('as-sub').textContent = Number(cat.budget_limit)>0 ? `Limite: ${Utils.formatCurrency(cat.budget_limit)}/mês` : 'Sem limite mensal';
+    }
+    document.getElementById('action-sheet').classList.add('open');
+  }
+
+  function closeActionSheet() { document.getElementById('action-sheet').classList.remove('open'); }
+
+  function editItem() {
+    closeActionSheet();
+    if (!currentItem) return;
+    if (currentItem.type==='account') {
+      const a = currentItem.data;
+      document.getElementById('acc-id').value = a.account_id;
+      document.getElementById('acc-modal-title').textContent = 'Editar Conta';
+      document.getElementById('acc-name').value = a.name;
+      document.getElementById('acc-type').value = a.type;
+      document.getElementById('acc-balance').value = Utils.formatCurrency(a.current_balance).replace('R$','').trim();
+      document.getElementById('acc-color').value = a.color||'#6D28D9';
+      document.querySelectorAll('.acc-color').forEach(el => { el.classList.toggle('selected', el.dataset.color===a.color); });
+      document.getElementById('account-modal').classList.add('open');
+    } else {
+      const c = currentItem.data;
+      document.getElementById('cat-id').value = c.category_id;
+      document.getElementById('cat-modal-title').textContent = 'Editar Categoria';
+      document.getElementById('cat-type').value = c.type;
+      document.getElementById('cat-name').value = c.name;
+      document.getElementById('cat-sub').value = c.subcategory||'';
+      document.getElementById('cat-icon').value = c.icon||'💰';
+      document.getElementById('cat-color').value = c.color||'#F59E0B';
+      document.getElementById('cat-limit').value = Number(c.budget_limit)>0 ? Number(c.budget_limit).toFixed(2).replace('.',',') : '';
+      document.querySelectorAll('.cat-color').forEach(el => { el.classList.toggle('selected', el.dataset.color===c.color); });
+      const iconEl = Array.from(document.querySelectorAll('.icon-opt')).find(el=>el.textContent===c.icon);
+      document.querySelectorAll('.icon-opt').forEach(el=>el.classList.remove('selected'));
+      if (iconEl) iconEl.classList.add('selected');
+      document.getElementById('cat-modal').classList.add('open');
+    }
+  }
+
+  function confirmDelete() {
+    closeActionSheet();
+    if (!currentItem) return;
+    const isAcc = currentItem.type==='account';
+    const name = isAcc ? currentItem.data.name : currentItem.data.name+(currentItem.data.subcategory?' · '+currentItem.data.subcategory:'');
+    document.getElementById('confirm-icon').textContent = isAcc ? '🏦' : (currentItem.data.icon||'🏷️');
+    document.getElementById('confirm-title').textContent = `Excluir ${isAcc?'conta':'categoria'}?`;
+    document.getElementById('confirm-msg').textContent = `Tem certeza que deseja excluir "${name}"? ${isAcc?'Os lançamentos vinculados não serão apagados.':'As transações vinculadas não serão apagadas.'}`;
+    document.getElementById('confirm-modal').classList.add('open');
+  }
+
+  function closeConfirm() { document.getElementById('confirm-modal').classList.remove('open'); }
+
+  async function doDelete() {
+    if (!currentItem) return;
+    const btn = document.getElementById('confirm-ok-btn');
+    btn.disabled=true; btn.textContent='Excluindo...';
+    let res;
+    if (currentItem.type==='account') {
+      res = await API.call('accounts.delete', { account_id: currentItem.data.account_id });
+    } else {
+      res = await API.call('categories.delete', { category_id: currentItem.data.category_id });
+    }
+    btn.disabled=false; btn.textContent='Sim, excluir';
+    if (res.success) {
+      Utils.toast('✅ Excluído com sucesso!');
+      closeConfirm();
+      currentItem = null;
+      loadAccounts();
+      loadCategories();
+    } else Utils.toast(res.error||'Erro ao excluir','error');
   }
 
   // ── Modals ─────────────────────────────────────────────
-  function openAccountModal() { document.getElementById('account-modal').classList.add('open'); }
+  function openAccountModal() {
+    document.getElementById('acc-id').value='';
+    document.getElementById('acc-modal-title').textContent='Nova Conta';
+    document.getElementById('acc-name').value='';
+    document.getElementById('acc-balance').value='';
+    document.getElementById('acc-type').value='checking';
+    document.getElementById('acc-color').value='#6D28D9';
+    document.querySelectorAll('.acc-color').forEach((el,i)=>el.classList.toggle('selected',i===0));
+    document.getElementById('account-modal').classList.add('open');
+  }
   function closeAccountModal() { document.getElementById('account-modal').classList.remove('open'); }
 
   function openCatModal(type) {
-    document.getElementById('cat-type').value = type;
-    document.getElementById('cat-modal-title').textContent = type === 'expense' ? 'Nova Categoria de Despesa' : 'Nova Categoria de Receita';
+    document.getElementById('cat-id').value='';
+    document.getElementById('cat-type').value=type;
+    document.getElementById('cat-modal-title').textContent=type==='expense'?'Nova Categoria de Despesa':'Nova Categoria de Receita';
+    document.getElementById('cat-name').value='';
+    document.getElementById('cat-sub').value='';
+    document.getElementById('cat-limit').value='';
+    document.getElementById('cat-icon').value='💰';
+    document.getElementById('cat-color').value='#F59E0B';
+    document.querySelectorAll('.cat-color').forEach((el,i)=>el.classList.toggle('selected',i===0));
+    document.querySelectorAll('.icon-opt').forEach(el=>el.classList.remove('selected'));
     document.getElementById('cat-modal').classList.add('open');
   }
   function closeCatModal() { document.getElementById('cat-modal').classList.remove('open'); }
 
   // ── Save ───────────────────────────────────────────────
   async function saveAccount() {
-    const name = document.getElementById('acc-name').value.trim();
+    const name=document.getElementById('acc-name').value.trim();
     if (!name) { Utils.toast('Digite o nome da conta','error'); return; }
-    const btn = document.getElementById('acc-save-btn');
-    btn.disabled=true; btn.textContent='Salvando...';
-    const res = await API.createAccount({
-      name,
-      type: document.getElementById('acc-type').value,
-      initial_balance: parseCurrency(document.getElementById('acc-balance').value),
-      color: document.getElementById('acc-color').value
-    });
+    const id=document.getElementById('acc-id').value;
+    const btn=document.getElementById('acc-save-btn'); btn.disabled=true; btn.textContent='Salvando...';
+    const payload={name,type:document.getElementById('acc-type').value,initial_balance:parseCurrency(document.getElementById('acc-balance').value),color:document.getElementById('acc-color').value};
+    const res = id ? await API.call('accounts.update',{account_id:id,...payload}) : await API.createAccount(payload);
     btn.disabled=false; btn.textContent='Salvar Conta';
-    if (res.success) {
-      Utils.toast('✅ Conta criada!');
-      closeAccountModal();
-      document.getElementById('acc-name').value='';
-      document.getElementById('acc-balance').value='';
-      loadAccounts();
-    } else Utils.toast(res.error||'Erro','error');
+    if (res.success) { Utils.toast(id?'✅ Conta atualizada!':'✅ Conta criada!'); closeAccountModal(); loadAccounts(); }
+    else Utils.toast(res.error||'Erro','error');
   }
 
   async function saveCategory() {
-    const name = document.getElementById('cat-name').value.trim();
+    const name=document.getElementById('cat-name').value.trim();
     if (!name) { Utils.toast('Digite o nome da categoria','error'); return; }
-    const btn = document.getElementById('cat-save-btn');
-    btn.disabled=true; btn.textContent='Salvando...';
-    const res = await API.createCategory({
-      name,
-      subcategory: document.getElementById('cat-sub').value.trim(),
-      type: document.getElementById('cat-type').value,
-      icon: document.getElementById('cat-icon').value,
-      color: document.getElementById('cat-color').value,
-      budget_limit: parseCurrency(document.getElementById('cat-limit').value)
-    });
+    const id=document.getElementById('cat-id').value;
+    const btn=document.getElementById('cat-save-btn'); btn.disabled=true; btn.textContent='Salvando...';
+    const payload={name,subcategory:document.getElementById('cat-sub').value.trim(),type:document.getElementById('cat-type').value,icon:document.getElementById('cat-icon').value,color:document.getElementById('cat-color').value,budget_limit:parseCurrency(document.getElementById('cat-limit').value)};
+    const res = id ? await API.call('categories.update',{category_id:id,...payload}) : await API.createCategory(payload);
     btn.disabled=false; btn.textContent='Salvar Categoria';
-    if (res.success) {
-      Utils.toast('✅ Categoria criada!');
-      closeCatModal();
-      ['cat-name','cat-sub','cat-limit'].forEach(id => document.getElementById(id).value='');
-      loadCategories();
-    } else Utils.toast(res.error||'Erro','error');
+    if (res.success) { Utils.toast(id?'✅ Categoria atualizada!':'✅ Categoria criada!'); closeCatModal(); loadCategories(); }
+    else Utils.toast(res.error||'Erro','error');
   }
 
   loadAccounts();
