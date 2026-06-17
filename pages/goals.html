@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>FinançasPRO — Metas</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<div class="page pt-safe">
+
+  <div class="flex items-center justify-between mb-4">
+    <h1>Metas de Economia</h1>
+  </div>
+
+  <div id="list-container">
+    <div class="skeleton"></div>
+    <div class="skeleton" style="height:140px"></div>
+  </div>
+
+</div>
+
+<button class="fab" onclick="openModal()">+</button>
+
+<!-- Modal nova meta -->
+<div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Nova Meta</h2>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+
+    <div class="field">
+      <label class="field-label">Nome da meta *</label>
+      <input type="text" id="g-name" placeholder="Ex: Viagem, Reserva de emergência...">
+    </div>
+    <div class="field">
+      <label class="field-label">Valor alvo (R$) *</label>
+      <input type="number" id="g-target" placeholder="10000" step="0.01" min="0">
+    </div>
+    <div class="field">
+      <label class="field-label">Contribuição mensal (R$)</label>
+      <input type="number" id="g-monthly" placeholder="500" step="0.01" min="0">
+    </div>
+    <div class="field">
+      <label class="field-label">Data alvo</label>
+      <input type="date" id="g-date">
+    </div>
+
+    <button class="btn btn-primary" id="save-btn" onclick="saveGoal()">Criar Meta</button>
+  </div>
+</div>
+
+<!-- Modal adicionar valor -->
+<div class="modal-overlay" id="add-modal" onclick="if(event.target===this)closeAddModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="add-modal-title">Adicionar à Meta</h2>
+      <button class="modal-close" onclick="closeAddModal()">✕</button>
+    </div>
+    <div class="field">
+      <label class="field-label">Valor a adicionar (R$) *</label>
+      <input type="number" id="add-amount" placeholder="0,00" step="0.01" min="0">
+    </div>
+    <button class="btn btn-success" onclick="saveAddAmount()">💰 Adicionar</button>
+  </div>
+</div>
+
+<script src="../js/config.js"></script>
+<script src="../js/api.js"></script>
+<script src="../js/utils.js"></script>
+<script src="../js/nav.js"></script>
+<script>
+  if (!Auth.requireAuth()) throw new Error('redirect');
+  renderNav('goals.html');
+
+  let goals = [];
+  let selectedGoal = null;
+
+  async function load() {
+    const res = await API.listGoals();
+    goals = res.success ? res.data : [];
+    render();
+  }
+
+  function render() {
+    if (goals.length === 0) {
+      document.getElementById('list-container').innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">🎯</div>
+          <p class="empty-text" style="margin-bottom:16px;">Defina suas metas financeiras</p>
+          <button class="btn btn-primary" style="max-width:200px;margin:0 auto;" onclick="openModal()">Criar primeira meta</button>
+        </div>`;
+      return;
+    }
+
+    const active = goals.filter(g => g.status !== 'completed');
+    const done = goals.filter(g => g.status === 'completed');
+
+    document.getElementById('list-container').innerHTML = `
+      ${active.map(g => renderGoalCard(g)).join('')}
+      ${done.length > 0 ? `
+        <p class="text-xs text-muted" style="margin:16px 0 8px;">Concluídas</p>
+        ${done.map(g => renderGoalDone(g)).join('')}
+      ` : ''}
+    `;
+  }
+
+  function renderGoalCard(g) {
+    const current = Number(g.current_amount) || 0;
+    const target = Number(g.target_amount) || 1;
+    const monthly = Number(g.monthly_contribution) || 0;
+    const progress = Math.min(100, Math.round((current / target) * 100));
+    const remaining = Math.max(0, target - current);
+    const monthsLeft = monthly > 0 ? Math.ceil(remaining / monthly) : null;
+    const progressColor = progress >= 100 ? 'var(--green)' : progress > 50 ? 'var(--accent)' : 'var(--yellow)';
+
+    return `
+      <div class="goal-card">
+        <div class="flex justify-between items-start mb-4">
+          <div>
+            <p class="font-semibold">${g.name}</p>
+            ${g.target_date ? `<p class="text-xs text-muted mt-1">📅 Meta: ${Utils.formatDate(g.target_date)}</p>` : ''}
+          </div>
+          <span style="font-size:1.5rem;">🎯</span>
+        </div>
+
+        <div class="flex justify-between mb-2">
+          <span class="font-bold text-lg" style="color:var(--green);">${Utils.formatCurrency(current)}</span>
+          <span class="text-sm text-muted">de ${Utils.formatCurrency(target)}</span>
+        </div>
+
+        <div class="progress-track mb-3">
+          <div class="progress-fill" style="width:${progress}%; background:${progressColor}"></div>
+        </div>
+
+        <div class="flex justify-between items-center">
+          <div class="text-xs text-muted">
+            ${progress}% concluído
+            ${monthsLeft ? ` · ~${monthsLeft} meses restantes` : ''}
+          </div>
+          <button class="btn btn-sm btn-primary" onclick="openAddModal('${g.goal_id}', '${g.name}', ${current}, ${target})">
+            + Adicionar
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderGoalDone(g) {
+    return `
+      <div class="card flex items-center gap-3" style="opacity:0.7;border:1px solid var(--green)">
+        <span style="font-size:1.3rem;">✅</span>
+        <div>
+          <p class="text-sm font-medium">${g.name}</p>
+          <p class="text-xs" style="color:var(--green);">Concluída! ${Utils.formatCurrency(g.target_amount)}</p>
+        </div>
+      </div>
+    `;
+  }
+
+  function openModal() { document.getElementById('modal-overlay').classList.add('open'); }
+  function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
+
+  function openAddModal(goalId, name, current, target) {
+    selectedGoal = { goalId, current, target };
+    document.getElementById('add-modal-title').textContent = `Adicionar a: ${name}`;
+    document.getElementById('add-amount').value = '';
+    document.getElementById('add-modal').classList.add('open');
+  }
+  function closeAddModal() { document.getElementById('add-modal').classList.remove('open'); selectedGoal = null; }
+
+  async function saveAddAmount() {
+    const amount = parseFloat(document.getElementById('add-amount').value);
+    if (!amount || !selectedGoal) { Utils.toast('Digite um valor', 'error'); return; }
+
+    const newAmount = Math.min(selectedGoal.target, selectedGoal.current + amount);
+    const isComplete = newAmount >= selectedGoal.target;
+
+    const res = await API.updateGoal({
+      goal_id: selectedGoal.goalId,
+      current_amount: newAmount,
+      status: isComplete ? 'completed' : 'active'
+    });
+
+    if (res.success) {
+      Utils.toast(isComplete ? '🎉 Meta concluída!' : '💰 Meta atualizada!');
+      closeAddModal();
+      load();
+    } else {
+      Utils.toast(res.error || 'Erro', 'error');
+    }
+  }
+
+  async function saveGoal() {
+    const name = document.getElementById('g-name').value.trim();
+    const target = parseFloat(document.getElementById('g-target').value);
+    if (!name || !target) { Utils.toast('Preencha nome e valor alvo', 'error'); return; }
+
+    const btn = document.getElementById('save-btn');
+    btn.disabled = true; btn.textContent = 'Salvando...';
+
+    const res = await API.createGoal({
+      name, target_amount: target,
+      monthly_contribution: parseFloat(document.getElementById('g-monthly').value) || 0,
+      target_date: document.getElementById('g-date').value,
+      current_amount: 0,
+    });
+
+    btn.disabled = false; btn.textContent = 'Criar Meta';
+
+    if (res.success) {
+      Utils.toast('🎯 Meta criada!');
+      closeModal();
+      ['g-name','g-target','g-monthly','g-date'].forEach(id => document.getElementById(id).value = '');
+      load();
+    } else {
+      Utils.toast(res.error || 'Erro', 'error');
+    }
+  }
+
+  load();
+</script>
+</body>
+</html>
