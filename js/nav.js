@@ -1,5 +1,5 @@
 // ============================================================
-// nav.js — Drawer lateral + bottom nav
+// nav.js — Drawer lateral + bottom nav 
 // ============================================================
 
 function injectNav(activePage) {
