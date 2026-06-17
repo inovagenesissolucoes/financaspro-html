@@ -30,12 +30,10 @@
     </div>
   </div>
 
-  <div style="display:flex;gap:5px;padding:12px 14px 8px;overflow-x:auto;" class="no-scrollbar">
-    <button class="tab tab-all" style="white-space:nowrap;flex-shrink:0;" onclick="setTab('all',this)">Todos</button>
-    <button class="tab tab-income" style="white-space:nowrap;flex-shrink:0;" onclick="setTab('income',this)">Receitas</button>
-    <button class="tab tab-expense" style="white-space:nowrap;flex-shrink:0;" onclick="setTab('expense',this)">Despesas</button>
-    <button class="tab" style="white-space:nowrap;flex-shrink:0;background:var(--accent-light);color:var(--accent-2);" onclick="setTab('recurring',this)">🔄 Recorrentes</button>
-    <button class="tab" style="white-space:nowrap;flex-shrink:0;background:var(--red-bg);color:var(--red);" onclick="setTab('overdue',this)">⚠ Vencidas</button>
+  <div style="display:flex;gap:6px;padding:12px 14px 8px;">
+    <button class="tab tab-all" onclick="setTab('all',this)">Todos</button>
+    <button class="tab tab-income" onclick="setTab('income',this)">Receitas</button>
+    <button class="tab tab-expense" onclick="setTab('expense',this)">Despesas</button>
   </div>
 
   <div id="list-container">
@@ -78,7 +76,6 @@
     <div class="field"><label class="field-label">Valor (R$) *</label><input type="number" id="tx-amount" placeholder="0,00" step="0.01" min="0"></div>
     <div class="field"><label class="field-label">Data *</label><input type="date" id="tx-date"></div>
     <div class="field"><label class="field-label">Categoria</label><select id="tx-category"><option value="">Sem categoria</option></select></div>
-    <div class="field"><label class="field-label">Conta</label><select id="tx-account"><option value="">Sem conta</option></select></div>
     <div class="field"><label class="field-label">Observações</label><input type="text" id="tx-notes" placeholder="Opcional"></div>
     <button class="btn btn-primary" id="tx-save-btn" onclick="saveTransaction()">Salvar</button>
   </div>
@@ -98,6 +95,7 @@
       <p style="font-size:18px;font-weight:700;color:var(--text);" id="pay-expected-display">R$ 0,00</p>
       <p style="font-size:11px;color:var(--text-3);margin-top:6px;" id="pay-tx-name"></p>
     </div>
+    <div class="field"><label class="field-label">Conta debitada</label><select id="pay-account-select"><option value="">Sem conta</option></select></div>
     <div class="field"><label class="field-label">Data real do pagamento *</label><input type="date" id="pay-date"></div>
     <div class="field"><label class="field-label">Valor real pago (R$) *</label><input type="number" id="pay-amount" placeholder="0,00" step="0.01" min="0" oninput="calcPayDiff()"></div>
     <div id="pay-diff-box" style="display:none;border-radius:var(--radius-sm);padding:12px;margin-bottom:16px;">
@@ -152,7 +150,6 @@
     <div class="field"><label class="field-label">Valor (R$) *</label><input type="number" id="rec-amount" placeholder="0,00" step="0.01"></div>
     <div class="field"><label class="field-label">Dia do mês *</label><input type="number" id="rec-day" placeholder="Ex: 5 = todo dia 5" min="1" max="31"></div>
     <div class="field"><label class="field-label">Categoria</label><select id="rec-category"><option value="">Sem categoria</option></select></div>
-    <div class="field"><label class="field-label">Conta</label><select id="rec-account"><option value="">Sem conta</option></select></div>
     <button class="btn btn-primary" id="rec-save-btn" onclick="saveRecurrence()">Salvar Recorrência</button>
   </div>
 </div>
@@ -171,7 +168,7 @@
     <div class="field"><label class="field-label">Data da 1ª parcela *</label><input type="date" id="d-date" onchange="checkRetroactive()"></div>
     <div id="retroactive-section" style="display:none;background:var(--yellow-bg);border-radius:var(--radius-sm);padding:14px;margin-bottom:14px;border:0.5px solid #FCD34D;">
       <p style="font-size:12px;font-weight:700;color:#92400E;margin-bottom:4px;">📅 Parcelamento retroativo</p>
-      <p style="font-size:10px;color:#B45309;margin-bottom:10px;">Parcelas passadas serão marcadas como histórico (sem afetar saldo). Informe a última paga:</p>
+      <p style="font-size:10px;color:#B45309;margin-bottom:10px;">Parcelas passadas serão marcadas como histórico (sem afetar saldo).</p>
       <div class="field" style="margin-bottom:0;"><label class="field-label">Última parcela paga (mês/ano)</label><input type="month" id="d-last-paid"><p style="font-size:10px;color:#B45309;margin-top:4px;">Deixe em branco para marcar todas as passadas como histórico</p></div>
     </div>
     <div class="field"><label class="field-label">Conta / Cartão</label><select id="d-account"><option value="">Sem conta</option></select></div>
@@ -204,10 +201,8 @@
     activeTab = tab;
     document.querySelectorAll('.tab').forEach(t => { t.classList.remove('tab-all','tab-income','tab-expense'); t.style.background='var(--bg-card)'; t.style.color='var(--text-3)'; });
     if (tab==='all') el.classList.add('tab-all');
-    else if (tab==='income') el.classList.add('tab-income');
-    else if (tab==='expense') el.classList.add('tab-expense');
-    else if (tab==='recurring') { el.style.background='var(--accent-light)'; el.style.color='var(--accent-2)'; }
-    else if (tab==='overdue') { el.style.background='var(--red-bg)'; el.style.color='var(--red)'; }
+    if (tab==='income') el.classList.add('tab-income');
+    if (tab==='expense') el.classList.add('tab-expense');
     renderList();
   }
 
@@ -218,25 +213,27 @@
     allTx=txRes.success?txRes.data:[]; categories=catRes.success?catRes.data:[]; accounts=accRes.success?accRes.data:[]; cards=cardRes.success?cardRes.data:[];
     const income=allTx.filter(t=>t.type==='income'&&t.status!=='cancelled');
     const expense=allTx.filter(t=>t.type==='expense'&&t.status!=='cancelled');
-    const totalIn=income.reduce((s,t)=>s+Number(t.expected_amount||0),0);
-    const totalExp=expense.reduce((s,t)=>s+Number(t.expected_amount||0),0);
-    document.getElementById('ph-income').textContent=Utils.formatCurrency(totalIn);
-    document.getElementById('ph-expense').textContent=Utils.formatCurrency(totalExp);
-    document.getElementById('ph-net').textContent=Utils.formatCurrency(totalIn-totalExp);
+    document.getElementById('ph-income').textContent=Utils.formatCurrency(income.reduce((s,t)=>s+Number(t.expected_amount||0),0));
+    document.getElementById('ph-expense').textContent=Utils.formatCurrency(expense.reduce((s,t)=>s+Number(t.expected_amount||0),0));
+    document.getElementById('ph-net').textContent=Utils.formatCurrency(income.reduce((s,t)=>s+Number(t.expected_amount||0),0)-expense.reduce((s,t)=>s+Number(t.expected_amount||0),0));
     renderList();
   }
+
+  function isRecurring(tx) { return tx.is_recurring==true||tx.is_recurring==='TRUE'; }
 
   function renderList() {
     let f=allTx.filter(t=>t.status!=='cancelled');
     if (activeTab==='income') f=f.filter(t=>t.type==='income');
-    else if (activeTab==='expense') f=f.filter(t=>t.type==='expense');
-    else if (activeTab==='recurring') f=f.filter(t=>t.is_recurring==true||t.is_recurring==='TRUE');
-    else if (activeTab==='overdue') f=f.filter(t=>Utils.isOverdue(t.due_date,t.status));
+    if (activeTab==='expense') f=f.filter(t=>t.type==='expense');
     if (f.length===0) { document.getElementById('list-container').innerHTML=`<div class="empty-state"><div class="empty-icon">📭</div><p class="empty-text">Nenhum lançamento encontrado</p><button class="btn btn-primary" style="max-width:200px;margin:0 auto;" onclick="openTypeSelector()">Adicionar</button></div>`; return; }
-    const paid=f.filter(t=>t.status==='paid'), overdue=f.filter(t=>t.status!=='paid'&&Utils.isOverdue(t.due_date,t.status)), pending=f.filter(t=>t.status!=='paid'&&!Utils.isOverdue(t.due_date,t.status));
+    const overdue=f.filter(t=>t.status!=='paid'&&Utils.isOverdue(t.due_date,t.status));
+    const recurring=f.filter(t=>t.status!=='paid'&&!Utils.isOverdue(t.due_date,t.status)&&isRecurring(t));
+    const pending=f.filter(t=>t.status!=='paid'&&!Utils.isOverdue(t.due_date,t.status)&&!isRecurring(t));
+    const paid=f.filter(t=>t.status==='paid');
     let html='';
     if (overdue.length>0) html+=`<div class="date-label">⚠ Vencidas</div><div class="tx-list">${overdue.map(renderCard).join('')}</div>`;
-    if (pending.length>0) html+=`<div class="date-label">Pendentes</div><div class="tx-list">${pending.map(renderCard).join('')}</div>`;
+    if (recurring.length>0) html+=`<div class="date-label">🔄 Recorrentes</div><div class="tx-list">${recurring.map(renderCard).join('')}</div>`;
+    if (pending.length>0) html+=`<div class="date-label">📋 Pendentes</div><div class="tx-list">${pending.map(renderCard).join('')}</div>`;
     if (paid.length>0) html+=`<div class="date-label">✓ Concluídas</div><div class="tx-list">${paid.map(renderCard).join('')}</div>`;
     document.getElementById('list-container').innerHTML=html;
   }
@@ -247,9 +244,8 @@
     const acc=accounts.find(a=>a.account_id===tx.account_id);
     const card=cards.find(c=>c.card_id===tx.card_id);
     const icon=cat?.icon||(tx.card_id?'💳':tx.type==='income'?'💼':'💰');
-    const sub=[cat?.name,acc?.name||card?.name].filter(Boolean).join(' · ');
+    const sub=[cat?.name+(cat?.subcategory?' · '+cat.subcategory:''), acc?.name||card?.name].filter(Boolean).join(' · ');
     const badge=tx.status==='paid'?`<span class="badge b-paid">${tx.type==='income'?'✓ Recebido':'✓ Pago'}</span>`:overdue?'<span class="badge b-over">⚠ Vencida</span>':`<span class="badge b-pend">Vence ${Utils.formatDate(tx.due_date)}</span>`;
-    const recTag=(tx.is_recurring==true||tx.is_recurring==='TRUE')?'<span class="badge" style="background:var(--accent-light);color:var(--accent-2);margin-left:4px;">🔄</span>':'';
     const instTag=tx.installment_number?`<span class="badge" style="background:#FEF3C7;color:#92400E;margin-left:4px;">📌 ${tx.installment_number}ª parc.</span>`:'';
     let amtHtml='';
     if (tx.status==='paid'&&tx.actual_amount&&Math.abs(Number(tx.actual_amount)-Number(tx.expected_amount))>0.01) {
@@ -262,17 +258,20 @@
       amtHtml=`<div class="tx-amt ${tx.type==='income'?'tx-pos':'tx-neg'}">${tx.type==='income'?'+':'-'}${Utils.formatCurrency(amt)}</div>`;
     }
     const payBtn=tx.status==='pending'?`<button class="pay-btn" onclick="openPayModal('${tx.transaction_id}','${tx.account_id||''}',${tx.expected_amount},'${tx.type}','${tx.description.replace(/'/g,"\\'")}')">${tx.type==='income'?'Confirmar':'Pagar'}</button>`:'';
-    return `<div class="tx-card ${overdue&&tx.status!=='paid'?'overdue':''}"><div class="tx-ico" style="background:${(cat?.color||'#6366F1')}22;">${icon}</div><div class="tx-body"><div class="tx-name">${tx.description}</div><div class="tx-cat">${sub}</div><div>${badge}${recTag}${instTag}</div></div><div class="tx-right">${amtHtml}${payBtn}</div></div>`;
+    return `<div class="tx-card ${overdue&&tx.status!=='paid'?'overdue':''}"><div class="tx-ico" style="background:${(cat?.color||'#6366F1')}22;">${icon}</div><div class="tx-body"><div class="tx-name">${tx.description}</div><div class="tx-cat">${sub}</div><div>${badge}${instTag}</div></div><div class="tx-right">${amtHtml}${payBtn}</div></div>`;
   }
 
   function openPayModal(txId,accountId,expected,type,name) {
-    document.getElementById('pay-tx-id').value=txId; document.getElementById('pay-account-id').value=accountId;
-    document.getElementById('pay-expected').value=expected; document.getElementById('pay-type').value=type;
+    document.getElementById('pay-tx-id').value=txId;
+    document.getElementById('pay-account-id').value=accountId;
+    document.getElementById('pay-expected').value=expected;
+    document.getElementById('pay-type').value=type;
     document.getElementById('pay-expected-display').textContent=Utils.formatCurrency(expected);
     document.getElementById('pay-tx-name').textContent=name;
     document.getElementById('pay-date').value=new Date().toISOString().split('T')[0];
     document.getElementById('pay-amount').value=expected;
     document.getElementById('pay-diff-box').style.display='none';
+    document.getElementById('pay-account-select').innerHTML='<option value="">Sem conta</option>'+accounts.map(a=>`<option value="${a.account_id}" ${a.account_id===accountId?'selected':''}>${a.name}</option>`).join('');
     document.getElementById('pay-modal').classList.add('open');
   }
   function closePayModal() { document.getElementById('pay-modal').classList.remove('open'); }
@@ -283,7 +282,7 @@
     const type=document.getElementById('pay-type').value;
     const box=document.getElementById('pay-diff-box');
     if (actual>0&&Math.abs(actual-expected)>0.01) {
-      const diff=actual-expected, isExpense=type==='expense', isBad=isExpense?diff>0:diff<0;
+      const diff=actual-expected,isExpense=type==='expense',isBad=isExpense?diff>0:diff<0;
       box.style.display='block'; box.style.background=isBad?'var(--red-bg)':'var(--green-bg)'; box.style.border=isBad?'0.5px solid #FECACA':'0.5px solid #BBF7D0';
       document.getElementById('pay-diff-label').textContent=isBad?(isExpense?'💸 Juros / Multa':'⚠ Recebi a menos'):(isExpense?'✅ Desconto':'✅ Recebi a mais');
       document.getElementById('pay-diff-label').style.color=isBad?'var(--red)':'var(--green)';
@@ -295,8 +294,9 @@
   }
 
   async function confirmPayment() {
-    const txId=document.getElementById('pay-tx-id').value, accountId=document.getElementById('pay-account-id').value;
-    const date=document.getElementById('pay-date').value, amount=parseFloat(document.getElementById('pay-amount').value);
+    const txId=document.getElementById('pay-tx-id').value;
+    const accountId=document.getElementById('pay-account-select').value||document.getElementById('pay-account-id').value;
+    const date=document.getElementById('pay-date').value,amount=parseFloat(document.getElementById('pay-amount').value);
     if (!date||!amount) { Utils.toast('Preencha data e valor','error'); return; }
     const btn=document.getElementById('pay-save-btn'); btn.disabled=true; btn.textContent='Confirmando...';
     const res=await API.markPaid({transaction_id:txId,account_id:accountId,paid_date:date,actual_amount:amount});
@@ -311,17 +311,16 @@
     closeTypeSelector(); txType=type;
     document.getElementById('tx-modal-title').textContent=type==='income'?'Nova Receita':'Nova Despesa';
     document.getElementById('tx-date').value=new Date().toISOString().split('T')[0];
-    document.getElementById('tx-category').innerHTML='<option value="">Sem categoria</option>'+categories.filter(c=>c.type===type).map(c=>`<option value="${c.category_id}">${c.icon||''} ${c.name}${c.subcategory ? ' · ' + c.subcategory : ''}</option>`).join('');
-    document.getElementById('tx-account').innerHTML='<option value="">Sem conta</option>'+accounts.map(a=>`<option value="${a.account_id}">${a.name}</option>`).join('');
+    document.getElementById('tx-category').innerHTML='<option value="">Sem categoria</option>'+categories.filter(c=>c.type===type).map(c=>`<option value="${c.category_id}">${c.icon||''} ${c.name}${c.subcategory?' · '+c.subcategory:''}</option>`).join('');
     document.getElementById('tx-modal').classList.add('open');
   }
   function closeTxModal() { document.getElementById('tx-modal').classList.remove('open'); }
 
   async function saveTransaction() {
-    const desc=document.getElementById('tx-desc').value.trim(), amount=parseFloat(document.getElementById('tx-amount').value), date=document.getElementById('tx-date').value;
+    const desc=document.getElementById('tx-desc').value.trim(),amount=parseFloat(document.getElementById('tx-amount').value),date=document.getElementById('tx-date').value;
     if (!desc||!amount||!date) { Utils.toast('Preencha descrição, valor e data','error'); return; }
     const btn=document.getElementById('tx-save-btn'); btn.disabled=true; btn.textContent='Salvando...';
-    const res=await API.createTransaction({type:txType,description:desc,expected_amount:amount,due_date:date,category_id:document.getElementById('tx-category').value,account_id:document.getElementById('tx-account').value,notes:document.getElementById('tx-notes').value});
+    const res=await API.createTransaction({type:txType,description:desc,expected_amount:amount,due_date:date,category_id:document.getElementById('tx-category').value,notes:document.getElementById('tx-notes').value});
     btn.disabled=false; btn.textContent='Salvar';
     if (res.success) { Utils.toast('✅ Salvo!'); closeTxModal(); ['tx-desc','tx-amount','tx-notes'].forEach(id=>document.getElementById(id).value=''); load(); } else Utils.toast(res.error||'Erro','error');
   }
@@ -330,13 +329,13 @@
     closeTypeSelector();
     document.getElementById('cm-date').value=new Date().toISOString().split('T')[0];
     document.getElementById('cm-card').innerHTML='<option value="">Selecione o cartão</option>'+cards.map(c=>`<option value="${c.card_id}">${c.name}</option>`).join('');
-    document.getElementById('cm-category').innerHTML='<option value="">Sem categoria</option>'+categories.filter(c=>c.type==='expense').map(c=>`<option value="${c.category_id}">${c.icon||''} ${c.name}${c.subcategory ? ' · ' + c.subcategory : ''}</option>`).join('');
+    document.getElementById('cm-category').innerHTML='<option value="">Sem categoria</option>'+categories.filter(c=>c.type==='expense').map(c=>`<option value="${c.category_id}">${c.icon||''} ${c.name}${c.subcategory?' · '+c.subcategory:''}</option>`).join('');
     document.getElementById('card-modal').classList.add('open');
   }
   function closeCardModal() { document.getElementById('card-modal').classList.remove('open'); }
 
   async function saveCardPurchase() {
-    const desc=document.getElementById('cm-desc').value.trim(), amount=parseFloat(document.getElementById('cm-amount').value), date=document.getElementById('cm-date').value, cardId=document.getElementById('cm-card').value;
+    const desc=document.getElementById('cm-desc').value.trim(),amount=parseFloat(document.getElementById('cm-amount').value),date=document.getElementById('cm-date').value,cardId=document.getElementById('cm-card').value;
     if (!desc||!amount||!date||!cardId) { Utils.toast('Preencha todos os campos obrigatórios','error'); return; }
     const btn=document.getElementById('cm-save-btn'); btn.disabled=true; btn.textContent='Salvando...';
     const res=await API.createTransaction({type:'expense',description:desc,expected_amount:amount,due_date:date,card_id:cardId,category_id:document.getElementById('cm-category').value});
@@ -354,13 +353,13 @@
   function closeTransferModal() { document.getElementById('transfer-modal').classList.remove('open'); }
 
   async function saveTransfer() {
-    const amount=parseFloat(document.getElementById('tr-amount').value), date=document.getElementById('tr-date').value;
-    const fromId=document.getElementById('tr-from').value, toId=document.getElementById('tr-to').value;
+    const amount=parseFloat(document.getElementById('tr-amount').value),date=document.getElementById('tr-date').value;
+    const fromId=document.getElementById('tr-from').value,toId=document.getElementById('tr-to').value;
     if (!amount||!date||!fromId||!toId) { Utils.toast('Preencha todos os campos','error'); return; }
     if (fromId===toId) { Utils.toast('Contas devem ser diferentes','error'); return; }
     const notes=document.getElementById('tr-notes').value;
     const btn=document.getElementById('tr-save-btn'); btn.disabled=true; btn.textContent='Transferindo...';
-    const fromName=accounts.find(a=>a.account_id===fromId)?.name||'origem', toName=accounts.find(a=>a.account_id===toId)?.name||'destino';
+    const fromName=accounts.find(a=>a.account_id===fromId)?.name||'origem',toName=accounts.find(a=>a.account_id===toId)?.name||'destino';
     const [r1,r2]=await Promise.all([API.createTransaction({type:'expense',description:`Transferência → ${toName}`,expected_amount:amount,due_date:date,account_id:fromId,notes}),API.createTransaction({type:'income',description:`Transferência ← ${fromName}`,expected_amount:amount,due_date:date,account_id:toId,notes})]);
     btn.disabled=false; btn.textContent='Transferir';
     if (r1.success&&r2.success) {
@@ -375,15 +374,14 @@
     recType=type;
     document.getElementById('rec-btn-expense').classList.toggle('active',type==='expense');
     document.getElementById('rec-btn-income').classList.toggle('active',type==='income');
-    document.getElementById('rec-category').innerHTML='<option value="">Sem categoria</option>'+categories.filter(c=>c.type===type).map(c=>`<option value="${c.category_id}">${c.icon||''} ${c.name}${c.subcategory ? ' · ' + c.subcategory : ''}</option>`).join('');
-    document.getElementById('rec-account').innerHTML='<option value="">Sem conta</option>'+accounts.map(a=>`<option value="${a.account_id}">${a.name}</option>`).join('');
+    document.getElementById('rec-category').innerHTML='<option value="">Sem categoria</option>'+categories.filter(c=>c.type===type).map(c=>`<option value="${c.category_id}">${c.icon||''} ${c.name}${c.subcategory?' · '+c.subcategory:''}</option>`).join('');
   }
 
   async function saveRecurrence() {
-    const desc=document.getElementById('rec-desc').value.trim(), amount=parseFloat(document.getElementById('rec-amount').value), day=parseInt(document.getElementById('rec-day').value);
+    const desc=document.getElementById('rec-desc').value.trim(),amount=parseFloat(document.getElementById('rec-amount').value),day=parseInt(document.getElementById('rec-day').value);
     if (!desc||!amount||!day) { Utils.toast('Preencha descrição, valor e dia','error'); return; }
     const btn=document.getElementById('rec-save-btn'); btn.disabled=true; btn.textContent='Salvando...';
-    const res=await API.createRecurrence({description:desc,type:recType,expected_amount:amount,recurrence_day:day,category_id:document.getElementById('rec-category').value,account_id:document.getElementById('rec-account').value,start_date:new Date().toISOString().split('T')[0]});
+    const res=await API.createRecurrence({description:desc,type:recType,expected_amount:amount,recurrence_day:day,category_id:document.getElementById('rec-category').value,account_id:'',start_date:new Date().toISOString().split('T')[0]});
     btn.disabled=false; btn.textContent='Salvar Recorrência';
     if (res.success) { await API.generateMonth(month); Utils.toast('✅ Recorrência salva!'); closeRecurrenceModal(); ['rec-desc','rec-amount','rec-day'].forEach(id=>document.getElementById(id).value=''); load(); } else Utils.toast(res.error||'Erro','error');
   }
@@ -400,15 +398,15 @@
     document.getElementById('d-date').value=new Date().toISOString().split('T')[0];
     document.getElementById('retroactive-section').style.display='none';
     document.getElementById('d-account').innerHTML='<option value="">Sem conta</option>'+accounts.map(a=>`<option value="${a.account_id}">${a.name}</option>`).join('')+cards.map(c=>`<option value="card:${c.card_id}">💳 ${c.name}</option>`).join('');
-    document.getElementById('d-category').innerHTML='<option value="">Sem categoria</option>'+categories.filter(c=>c.type==='expense').map(c=>`<option value="${c.category_id}">${c.icon||''} ${c.name}${c.subcategory ? ' · ' + c.subcategory : ''}</option>`).join('');
+    document.getElementById('d-category').innerHTML='<option value="">Sem categoria</option>'+categories.filter(c=>c.type==='expense').map(c=>`<option value="${c.category_id}">${c.icon||''} ${c.name}${c.subcategory?' · '+c.subcategory:''}</option>`).join('');
     document.getElementById('debt-modal').classList.add('open');
   }
   function closeDebtModal() { document.getElementById('debt-modal').classList.remove('open'); }
 
   function calcDebtPreview() {
-    const total=parseFloat(document.getElementById('d-total').value)||0, install=parseFloat(document.getElementById('d-install').value)||0, original=parseFloat(document.getElementById('d-original').value)||0;
+    const total=parseFloat(document.getElementById('d-total').value)||0,install=parseFloat(document.getElementById('d-install').value)||0,original=parseFloat(document.getElementById('d-original').value)||0;
     if (total>0&&install>0) {
-      const totalPay=total*install, juros=totalPay-original;
+      const totalPay=total*install,juros=totalPay-original;
       document.getElementById('prev-total').textContent=Utils.formatCurrency(totalPay);
       document.getElementById('prev-original').textContent=Utils.formatCurrency(original);
       document.getElementById('prev-juros').textContent=juros>0?Utils.formatCurrency(juros):'R$ 0,00';
@@ -418,10 +416,10 @@
   }
 
   async function saveDebt() {
-    const desc=document.getElementById('d-desc').value.trim(), totalInstall=parseInt(document.getElementById('d-total').value), installAmt=parseFloat(document.getElementById('d-install').value), firstDate=document.getElementById('d-date').value;
+    const desc=document.getElementById('d-desc').value.trim(),totalInstall=parseInt(document.getElementById('d-total').value),installAmt=parseFloat(document.getElementById('d-install').value),firstDate=document.getElementById('d-date').value;
     if (!desc||!totalInstall||!installAmt||!firstDate) { Utils.toast('Preencha os campos obrigatórios','error'); return; }
     const accVal=document.getElementById('d-account').value;
-    const accountId=accVal.startsWith('card:')?'':accVal, cardId=accVal.startsWith('card:')?accVal.replace('card:',''):'';
+    const accountId=accVal.startsWith('card:')?'':accVal,cardId=accVal.startsWith('card:')?accVal.replace('card:',''):'';
     const lastPaid=document.getElementById('d-last-paid').value||'';
     const btn=document.getElementById('d-save-btn'); btn.disabled=true; btn.textContent=`Criando ${totalInstall} parcelas...`;
     const res=await API.createDebt({description:desc,original_amount:parseFloat(document.getElementById('d-original').value)||(totalInstall*installAmt),total_installments:totalInstall,installment_amount:installAmt,first_due_date:firstDate,last_paid_month:lastPaid,category_id:document.getElementById('d-category').value,account_id:accountId,card_id:cardId});
