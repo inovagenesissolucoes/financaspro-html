@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>FinançasPRO — Relatórios</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<div class="page">
+
+  <div class="page-hero">
+    <div class="page-hero-row">
+      <div><h1 class="page-hero-title">Relatórios</h1><p class="page-hero-sub" id="report-period"></p></div>
+    </div>
+    <!-- Period selector -->
+    <div style="display:flex;gap:6px;margin-top:10px;">
+      <button class="period-btn active" onclick="setPeriod(3,this)">3 meses</button>
+      <button class="period-btn" onclick="setPeriod(6,this)">6 meses</button>
+      <button class="period-btn" onclick="setPeriod(12,this)">12 meses</button>
+    </div>
+  </div>
+
+  <!-- Summary cards -->
+  <div class="stat-grid" id="summary-grid">
+    <div class="scard scard-3"><div class="scard-icon">📥</div><div class="scard-lbl">Total Receitas</div><div class="scard-val" id="total-income">R$ 0</div></div>
+    <div class="scard scard-2"><div class="scard-icon">📤</div><div class="scard-lbl">Total Despesas</div><div class="scard-val" id="total-expense">R$ 0</div></div>
+    <div class="scard scard-1"><div class="scard-icon">💰</div><div class="scard-lbl">Saldo Período</div><div class="scard-val" id="total-net">R$ 0</div></div>
+    <div class="scard scard-4"><div class="scard-icon">📊</div><div class="scard-lbl">Média Mensal</div><div class="scard-val" id="avg-expense">R$ 0</div></div>
+  </div>
+
+  <!-- Evolução mensal -->
+  <div class="sec">
+    <div class="sec-hdr"><span class="sec-title">📈 Evolução Mensal</span></div>
+    <div style="background:var(--bg-card);border-radius:var(--radius);padding:16px;border:0.5px solid var(--border);">
+      <canvas id="evolution-chart" height="200"></canvas>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Gastos por categoria -->
+  <div class="sec">
+    <div class="sec-hdr"><span class="sec-title">🍩 Gastos por Categoria</span></div>
+    <div style="background:var(--bg-card);border-radius:var(--radius);padding:16px;border:0.5px solid var(--border);margin-bottom:14px;">
+      <canvas id="donut-chart" height="200"></canvas>
+    </div>
+    <div id="cat-breakdown"></div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Análise inteligente -->
+  <div class="sec sec-last">
+    <div class="sec-hdr"><span class="sec-title">🧠 Análise</span></div>
+    <div id="analysis-container"></div>
+  </div>
+
+</div>
+
+<!-- Bottom nav -->
+<div class="bnav-wrap">
+  <div class="bnav">
+    <a href="dashboard.html" class="ntab"><i class="ti ti-home"></i><span>Início</span></a>
+    <a href="transactions.html" class="ntab"><i class="ti ti-list"></i><span>Lançamentos</span></a>
+    <div class="ncenter"><button class="fab-nav" onclick="window.location.href='transactions.html#new'"><i class="ti ti-plus"></i></button></div>
+    <a href="cards.html" class="ntab"><i class="ti ti-credit-card"></i><span>Cartões</span></a>
+    <a href="more.html" class="ntab"><i class="ti ti-dots"></i><span>Mais</span></a>
+  </div>
+</div>
+
+<style>
+.period-btn { padding:6px 14px; border-radius:20px; border:1.5px solid rgba(255,255,255,0.3); background:rgba(255,255,255,0.12); color:#fff; font-size:11px; font-weight:600; cursor:pointer; font-family:inherit; transition:all 0.15s; }
+.period-btn.active { background:#fff; color:#4338CA; border-color:#fff; }
+.analysis-card { background:var(--bg-card); border-radius:var(--radius); padding:14px; border:0.5px solid var(--border); margin-bottom:10px; display:flex; align-items:flex-start; gap:12px; }
+.analysis-icon { font-size:22px; flex-shrink:0; }
+.analysis-title { font-size:12px; font-weight:700; color:var(--text); margin-bottom:3px; }
+.analysis-text { font-size:11px; color:var(--text-3); line-height:1.5; }
+</style>
+
+<script src="../js/config.js"></script>
+<script src="../js/api.js"></script>
+<script src="../js/utils.js"></script>
+<script>
+  if (!Auth.requireAuth()) throw '';
+  applyTheme();
+
+  let currentPeriod = 3;
+  let evolutionChart = null;
+  let donutChart = null;
+
+  function setPeriod(months, btn) {
+    currentPeriod = months;
+    document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    loadReports();
+  }
+
+  function getMonthsList(count) {
+    const months = [];
+    const now = new Date();
+    for (let i = count - 1; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      months.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);
+    }
+    return months;
+  }
+
+  async function loadReports() {
+    const months = getMonthsList(currentPeriod);
+    document.getElementById('report-period').textContent = `${Utils.formatMonth(months[0])} → ${Utils.formatMonth(months[months.length-1])}`;
+
+    // Fetch all months in parallel
+    const results = await Promise.all(months.map(m => Promise.all([
+      API.getDashboard(m),
+      API.getCategoryBreakdown(m)
+    ])));
+
+    const monthData = results.map(([sum, cat], i) => ({
+      month: months[i],
+      label: Utils.formatMonth(months[i]).split(' ')[0],
+      income: sum.success ? sum.data.income.expected : 0,
+      expense: sum.success ? sum.data.expense.expected : 0,
+      net: sum.success ? sum.data.net : 0,
+      cats: cat.success ? cat.data : []
+    }));
+
+    // Totals
+    const totalIncome  = monthData.reduce((s,m) => s + m.income, 0);
+    const totalExpense = monthData.reduce((s,m) => s + m.expense, 0);
+    const totalNet     = totalIncome - totalExpense;
+    const avgExpense   = totalExpense / currentPeriod;
+
+    document.getElementById('total-income').textContent  = Utils.formatCurrency(totalIncome);
+    document.getElementById('total-expense').textContent = Utils.formatCurrency(totalExpense);
+    document.getElementById('total-net').textContent     = Utils.formatCurrency(totalNet);
+    document.getElementById('avg-expense').textContent   = Utils.formatCurrency(avgExpense);
+
+    // Evolution chart
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+    const textColor = isDark ? '#9CA3AF' : '#6B7280';
+
+    if (evolutionChart) evolutionChart.destroy();
+    evolutionChart = new Chart(document.getElementById('evolution-chart'), {
+      type: 'bar',
+      data: {
+        labels: monthData.map(m => m.label),
+        datasets: [
+          { label: 'Receitas', data: monthData.map(m => m.income), backgroundColor: 'rgba(22,163,74,0.7)', borderRadius: 6, borderSkipped: false },
+          { label: 'Despesas', data: monthData.map(m => m.expense), backgroundColor: 'rgba(220,38,38,0.7)', borderRadius: 6, borderSkipped: false }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: true,
+        plugins: { legend: { labels: { color: textColor, font: { size: 11 }, boxWidth: 12 } } },
+        scales: {
+          x: { grid: { color: gridColor }, ticks: { color: textColor, font: { size: 10 } } },
+          y: { grid: { color: gridColor }, ticks: { color: textColor, font: { size: 10 }, callback: v => 'R$' + (v/1000).toFixed(0) + 'k' } }
+        }
+      }
+    });
+
+    // Aggregate categories across all months
+    const catMap = {};
+    monthData.forEach(m => {
+      m.cats.forEach(c => {
+        if (!catMap[c.name]) catMap[c.name] = { name: c.name, total: 0, color: c.color, icon: c.icon };
+        catMap[c.name].total += c.total;
+      });
+    });
+    const aggCats = Object.values(catMap).sort((a,b) => b.total - a.total);
+
+    // Donut chart
+    if (donutChart) donutChart.destroy();
+    if (aggCats.length > 0) {
+      donutChart = new Chart(document.getElementById('donut-chart'), {
+        type: 'doughnut',
+        data: {
+          labels: aggCats.slice(0,6).map(c => c.name),
+          datasets: [{ data: aggCats.slice(0,6).map(c => c.total), backgroundColor: aggCats.slice(0,6).map(c => c.color || '#6366F1'), borderWidth: 0, hoverOffset: 4 }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: true, cutout: '60%',
+          plugins: { legend: { position: 'bottom', labels: { color: textColor, font: { size: 10 }, boxWidth: 10, padding: 8 } } }
+        }
+      });
+    }
+
+    // Category breakdown list
+    document.getElementById('cat-breakdown').innerHTML = aggCats.slice(0,8).map(c => {
+      const pct = totalExpense > 0 ? Math.round((c.total/totalExpense)*100) : 0;
+      return `
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+          <div style="width:34px;height:34px;border-radius:10px;background:${c.color}22;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;">${c.icon||'💰'}</div>
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+              <span style="font-size:12px;font-weight:600;color:var(--text);">${c.name}</span>
+              <span style="font-size:11px;font-weight:700;color:${c.color};">${Utils.formatCurrency(c.total)}</span>
+            </div>
+            <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${c.color};"></div></div>
+          </div>
+          <span style="font-size:10px;color:var(--text-3);min-width:28px;text-align:right;">${pct}%</span>
+        </div>`;
+    }).join('');
+
+    // Smart analysis
+    const analysis = [];
+    const topCat = aggCats[0];
+    if (topCat && totalExpense > 0) {
+      const topPct = Math.round((topCat.total/totalExpense)*100);
+      analysis.push({ icon: '🔍', title: `${topCat.name} é seu maior gasto`, text: `Representou ${topPct}% das suas despesas no período — ${Utils.formatCurrency(topCat.total)} no total.` });
+    }
+    if (totalNet > 0) {
+      analysis.push({ icon: '✅', title: 'Você está no positivo!', text: `Sobrou ${Utils.formatCurrency(totalNet)} no período. Continue assim e transfira para suas metas de economia.` });
+    } else if (totalNet < 0) {
+      analysis.push({ icon: '⚠️', title: 'Gastos acima das receitas', text: `Você gastou ${Utils.formatCurrency(Math.abs(totalNet))} a mais do que recebeu. Revise suas despesas maiores.` });
+    }
+    if (avgExpense > 0) {
+      analysis.push({ icon: '📊', title: 'Média mensal de gastos', text: `Você gastou em média ${Utils.formatCurrency(avgExpense)} por mês nos últimos ${currentPeriod} meses.` });
+    }
+    if (aggCats.length >= 3) {
+      const top3 = aggCats.slice(0,3).map(c=>c.name).join(', ');
+      analysis.push({ icon: '💡', title: 'Top 3 categorias', text: `${top3} concentram a maior parte dos seus gastos. Foque na redução dessas para economizar mais.` });
+    }
+
+    document.getElementById('analysis-container').innerHTML = analysis.map(a => `
+      <div class="analysis-card">
+        <span class="analysis-icon">${a.icon}</span>
+        <div><p class="analysis-title">${a.title}</p><p class="analysis-text">${a.text}</p></div>
+      </div>`).join('');
+  }
+
+  loadReports();
+</script>
+</body>
+</html>
