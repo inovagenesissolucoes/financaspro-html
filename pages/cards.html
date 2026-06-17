@@ -10,8 +10,11 @@
 <div class="page">
 
   <div class="page-hero">
-    <div class="page-hero-row">
-      <div><h1 class="page-hero-title">Cartões</h1><p class="page-hero-sub">Gerencie seus cartões e faturas</p></div>
+    <div class="page-hero-row" style="gap:10px;">
+      <div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;"><a href="dashboard.html" class="back-btn">&#8249;</a><div><h1 class="page-hero-title">Cartões</h1><p class="page-hero-sub">Gerencie seus cartões e faturas</p></div>
+      <button class="menu-btn" onclick="openDrawer()"><i class="ti ti-menu-2"></i></button>
     </div>
   </div>
 
@@ -65,9 +68,11 @@
 <script src="../js/config.js"></script>
 <script src="../js/api.js"></script>
 <script src="../js/utils.js"></script>
+<script src="../js/nav.js"></script>
 <script>
   if (!Auth.requireAuth()) throw '';
   applyTheme();
+  injectNav('cards.html');
 
   let categories = [];
   const CC_CLASSES = ['cc-purple','cc-blue','cc-green'];
