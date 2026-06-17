@@ -12,13 +12,17 @@
 
   <div class="page-hero">
     <div class="page-hero-row">
-      <div style="display:flex;align-items:center;gap:10px;">
-        <a href="dashboard.html" class="back-btn">‹</a>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <button class="menu-btn" onclick="openDrawer()"><i class="ti ti-menu-2"></i></button>
         <div>
           <h1 class="page-hero-title">Metas</h1>
           <p class="page-hero-sub">Seus objetivos financeiros</p>
         </div>
       </div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        
+      </div>
+    </div>
       <button class="menu-btn" onclick="openDrawer()"><i class="ti ti-menu-2"></i></button>
     </div>
   </div>
@@ -40,6 +44,7 @@
   </div>
 </div>
 
+<!-- Modal nova meta -->
 <div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)closeModal()">
   <div class="modal">
     <div class="modal-handle"></div>
@@ -52,6 +57,7 @@
   </div>
 </div>
 
+<!-- Modal adicionar valor -->
 <div class="modal-overlay" id="add-modal" onclick="if(event.target===this)closeAddModal()">
   <div class="modal">
     <div class="modal-handle"></div>
