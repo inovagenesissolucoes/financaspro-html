@@ -11,8 +11,10 @@
 <div class="page">
 
   <div class="page-hero">
-    <div class="page-hero-row">
-      <div><h1 class="page-hero-title">Relatórios</h1><p class="page-hero-sub" id="report-period"></p></div>
+    <div class="page-hero-row" style="gap:10px;">
+      <div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;"><a href="dashboard.html" class="back-btn">&#8249;</a><div><h1 class="page-hero-title">Relatórios</h1><p class="page-hero-sub" id="report-period"></p></div>
     </div>
     <!-- Period selector -->
     <div style="display:flex;gap:6px;margin-top:10px;">
@@ -82,9 +84,11 @@
 <script src="../js/config.js"></script>
 <script src="../js/api.js"></script>
 <script src="../js/utils.js"></script>
+<script src="../js/nav.js"></script>
 <script>
   if (!Auth.requireAuth()) throw '';
   applyTheme();
+  injectNav('reports.html');
 
   let currentPeriod = 3;
   let evolutionChart = null;
