@@ -6,6 +6,12 @@
   <title>FinançasPRO — Configurações</title>
   <link rel="stylesheet" href="../css/style.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+  <style>
+    .color-opt { width:34px;height:34px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:all 0.15s;display:inline-block;flex-shrink:0; }
+    .color-opt.selected { border-color:#fff;box-shadow:0 0 0 2px var(--accent); }
+    .icon-opt { cursor:pointer;padding:5px;border-radius:8px;border:2px solid transparent;font-size:22px;display:inline-flex;align-items:center;justify-content:center; }
+    .icon-opt.selected { background:var(--accent-light);border-color:var(--accent-2); }
+  </style>
 </head>
 <body>
 <div class="page">
@@ -24,14 +30,14 @@
   </div>
 
   <!-- Perfil -->
-  <div class="sec mt-3">
+  <div class="sec" style="margin-top:14px;">
     <div class="sec-hdr"><span class="sec-title">👤 Meu Perfil</span></div>
     <div class="dcard" style="margin-bottom:0;">
       <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;">
-        <div style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#6D28D9,#7C3AED);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#fff;" id="pg-avatar">?</div>
+        <div id="pg-avatar" style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#6D28D9,#7C3AED);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#fff;flex-shrink:0;">?</div>
         <div>
-          <p style="font-size:15px;font-weight:700;color:var(--text);" id="pg-name">Carregando...</p>
-          <p style="font-size:12px;color:var(--text-3);" id="pg-email"></p>
+          <p id="pg-name" style="font-size:15px;font-weight:700;color:var(--text);">Carregando...</p>
+          <p id="pg-email" style="font-size:12px;color:var(--text-3);margin-top:2px;"></p>
         </div>
       </div>
       <button class="btn btn-ghost" onclick="Auth.logout()" style="color:var(--red);border-color:var(--red-bg);">🚪 Sair da conta</button>
@@ -99,17 +105,23 @@
         <option value="other">Outro</option>
       </select>
     </div>
-    <div class="field"><label class="field-label">Saldo inicial (R$)</label><input type="number" id="acc-balance" placeholder="0,00" step="0.01"></div>
+    <div class="field">
+      <label class="field-label">Saldo inicial (R$)</label>
+      <input type="text" id="acc-balance" placeholder="0,00" inputmode="decimal"
+        oninput="currencyInput(this)" onblur="currencyBlur(this)">
+      <p style="font-size:10px;color:var(--text-3);margin-top:4px;">Use vírgula ou ponto decimal. Ex: 1.500,00 ou 1500.00</p>
+    </div>
     <div class="field">
       <label class="field-label">Cor</label>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;">
-        <div class="color-opt selected" style="background:#6D28D9" data-color="#6D28D9" onclick="selectAccColor(this)"></div>
-        <div class="color-opt" style="background:#0369A1" data-color="#0369A1" onclick="selectAccColor(this)"></div>
-        <div class="color-opt" style="background:#065F46" data-color="#065F46" onclick="selectAccColor(this)"></div>
-        <div class="color-opt" style="background:#BE185D" data-color="#BE185D" onclick="selectAccColor(this)"></div>
-        <div class="color-opt" style="background:#C2410C" data-color="#C2410C" onclick="selectAccColor(this)"></div>
-        <div class="color-opt" style="background:#1D4ED8" data-color="#1D4ED8" onclick="selectAccColor(this)"></div>
-        <div class="color-opt" style="background:#6B7280" data-color="#6B7280" onclick="selectAccColor(this)"></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;">
+        <div class="color-opt selected" style="background:#6D28D9;" data-color="#6D28D9" onclick="selectAccColor(this)"></div>
+        <div class="color-opt" style="background:#0369A1;" data-color="#0369A1" onclick="selectAccColor(this)"></div>
+        <div class="color-opt" style="background:#065F46;" data-color="#065F46" onclick="selectAccColor(this)"></div>
+        <div class="color-opt" style="background:#BE185D;" data-color="#BE185D" onclick="selectAccColor(this)"></div>
+        <div class="color-opt" style="background:#C2410C;" data-color="#C2410C" onclick="selectAccColor(this)"></div>
+        <div class="color-opt" style="background:#1D4ED8;" data-color="#1D4ED8" onclick="selectAccColor(this)"></div>
+        <div class="color-opt" style="background:#6B7280;" data-color="#6B7280" onclick="selectAccColor(this)"></div>
+        <div class="color-opt" style="background:#0F766E;" data-color="#0F766E" onclick="selectAccColor(this)"></div>
       </div>
       <input type="hidden" id="acc-color" value="#6D28D9">
     </div>
@@ -127,24 +139,30 @@
     <div class="field"><label class="field-label">Subcategoria</label><input type="text" id="cat-sub" placeholder="Ex: Mercado, Restaurante..."></div>
     <div class="field">
       <label class="field-label">Ícone</label>
-      <div id="icon-picker" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;"></div>
+      <div id="icon-picker" style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px;"></div>
       <input type="hidden" id="cat-icon" value="💰">
     </div>
     <div class="field">
       <label class="field-label">Cor</label>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;">
-        <div class="color-opt cat-color selected" style="background:#F59E0B" data-color="#F59E0B" onclick="selectCatColor(this)"></div>
-        <div class="color-opt cat-color" style="background:#EF4444" data-color="#EF4444" onclick="selectCatColor(this)"></div>
-        <div class="color-opt cat-color" style="background:#8B5CF6" data-color="#8B5CF6" onclick="selectCatColor(this)"></div>
-        <div class="color-opt cat-color" style="background:#3B82F6" data-color="#3B82F6" onclick="selectCatColor(this)"></div>
-        <div class="color-opt cat-color" style="background:#10B981" data-color="#10B981" onclick="selectCatColor(this)"></div>
-        <div class="color-opt cat-color" style="background:#EC4899" data-color="#EC4899" onclick="selectCatColor(this)"></div>
-        <div class="color-opt cat-color" style="background:#F97316" data-color="#F97316" onclick="selectCatColor(this)"></div>
-        <div class="color-opt cat-color" style="background:#06B6D4" data-color="#06B6D4" onclick="selectCatColor(this)"></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;">
+        <div class="color-opt cat-color selected" style="background:#F59E0B;" data-color="#F59E0B" onclick="selectCatColor(this)"></div>
+        <div class="color-opt cat-color" style="background:#EF4444;" data-color="#EF4444" onclick="selectCatColor(this)"></div>
+        <div class="color-opt cat-color" style="background:#8B5CF6;" data-color="#8B5CF6" onclick="selectCatColor(this)"></div>
+        <div class="color-opt cat-color" style="background:#3B82F6;" data-color="#3B82F6" onclick="selectCatColor(this)"></div>
+        <div class="color-opt cat-color" style="background:#10B981;" data-color="#10B981" onclick="selectCatColor(this)"></div>
+        <div class="color-opt cat-color" style="background:#EC4899;" data-color="#EC4899" onclick="selectCatColor(this)"></div>
+        <div class="color-opt cat-color" style="background:#F97316;" data-color="#F97316" onclick="selectCatColor(this)"></div>
+        <div class="color-opt cat-color" style="background:#06B6D4;" data-color="#06B6D4" onclick="selectCatColor(this)"></div>
+        <div class="color-opt cat-color" style="background:#DC2626;" data-color="#DC2626" onclick="selectCatColor(this)"></div>
+        <div class="color-opt cat-color" style="background:#7C3AED;" data-color="#7C3AED" onclick="selectCatColor(this)"></div>
       </div>
       <input type="hidden" id="cat-color" value="#F59E0B">
     </div>
-    <div class="field"><label class="field-label">Limite mensal (R$)</label><input type="number" id="cat-limit" placeholder="0 = sem limite" step="0.01"></div>
+    <div class="field">
+      <label class="field-label">Limite mensal (R$)</label>
+      <input type="text" id="cat-limit" placeholder="0 = sem limite" inputmode="decimal"
+        oninput="currencyInput(this)" onblur="currencyBlur(this)">
+    </div>
     <button class="btn btn-primary" id="cat-save-btn" onclick="saveCategory()">Salvar Categoria</button>
   </div>
 </div>
@@ -158,7 +176,7 @@
   applyTheme();
   injectNav('settings.html');
 
-  // Perfil — usa IDs pg- para não conflitar com o drawer
+  // Perfil
   const user = Auth.getUser();
   if (user) {
     document.getElementById('pg-name').textContent = user.name;
@@ -166,9 +184,44 @@
     document.getElementById('pg-avatar').textContent = user.name.split(' ').map(n=>n[0]).slice(0,2).join('');
   }
 
-  // Icon picker
-  const icons = ['🛒','🍽️','🚗','🚌','⛽','🏠','🏢','💡','💧','📱','🎬','🎮','✈️','🏥','💊','📚','🎓','💼','💰','📈','🎁','🐾','👔','👟','🍺','🏋️','💇','🐶','🔧','🎵'];
-  document.getElementById('icon-picker').innerHTML = icons.map(i => `<span class="icon-opt" onclick="selectIcon(this,'${i}')">${i}</span>`).join('');
+  // ── Currency input helpers ─────────────────────────────
+  function currencyInput(el) {
+    // Allow only digits, comma and dot
+    let v = el.value.replace(/[^\d.,]/g, '');
+    el.value = v;
+  }
+
+  function currencyBlur(el) {
+    let v = el.value.trim();
+    if (!v) return;
+    const num = parseCurrency(v);
+    if (!isNaN(num) && num > 0) {
+      el.value = num.toFixed(2).replace('.', ',');
+    } else {
+      el.value = '';
+    }
+  }
+
+  function parseCurrency(val) {
+    if (!val) return 0;
+    let v = val.trim();
+    // Format "1.234,56" → has both dot and comma
+    if (v.includes('.') && v.includes(',')) {
+      // Dot is thousand separator, comma is decimal
+      v = v.replace(/\./g, '').replace(',', '.');
+    } else if (v.includes(',')) {
+      // Only comma → decimal separator
+      v = v.replace(',', '.');
+    }
+    // else only dot → already valid float
+    return parseFloat(v) || 0;
+  }
+
+  // ── Icon picker ────────────────────────────────────────
+  const icons = ['🛒','🍽️','🚗','🚌','⛽','🏠','🏢','💡','💧','📱','🎬','🎮','✈️','🏥','💊','📚','🎓','💼','💰','📈','🎁','🐾','👔','👟','🍺','🏋️','💇','🐶','🔧','🎵','🎯','🍕','☕','🛁','🐱','🏦','🚿','🏪'];
+  document.getElementById('icon-picker').innerHTML = icons.map(i =>
+    `<span class="icon-opt" onclick="selectIcon(this,'${i}')">${i}</span>`
+  ).join('');
 
   function selectIcon(el, icon) {
     document.querySelectorAll('.icon-opt').forEach(e => e.classList.remove('selected'));
@@ -188,19 +241,17 @@
     document.getElementById('cat-color').value = el.dataset.color;
   }
 
+  // ── Load data ──────────────────────────────────────────
   const typeLabel = {checking:'Conta corrente',savings:'Poupança',wallet:'Carteira',investment:'Investimento',other:'Outro'};
 
   async function loadAccounts() {
     const res = await API.listAccounts();
     const accounts = res.success ? res.data : [];
-    const ACC = ['ac-purple','ac-blue','ac-green','ac-pink','ac-orange'];
-
     if (accounts.length === 0) {
-      document.getElementById('accounts-list').innerHTML = '<p class="text-muted text-xs" style="padding:8px 0;">Nenhuma conta. Crie a primeira!</p>';
+      document.getElementById('accounts-list').innerHTML = '<p style="font-size:12px;color:var(--text-3);padding:8px 0;">Nenhuma conta. Crie a primeira!</p>';
       return;
     }
-
-    document.getElementById('accounts-list').innerHTML = accounts.map((a,i) => `
+    document.getElementById('accounts-list').innerHTML = accounts.map(a => `
       <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:0.5px solid var(--border);">
         <div style="width:40px;height:40px;border-radius:12px;background:${a.color||'#6D28D9'};display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">🏦</div>
         <div style="flex:1;">
@@ -224,18 +275,19 @@
           <p style="font-size:12px;font-weight:600;color:var(--text);">${c.name}${c.subcategory?` <span style="font-weight:400;color:var(--text-3);">· ${c.subcategory}</span>`:''}</p>
           ${Number(c.budget_limit)>0?`<p style="font-size:10px;color:var(--text-3);">Limite: ${Utils.formatCurrency(c.budget_limit)}</p>`:''}
         </div>
-        <div style="width:8px;height:8px;border-radius:50%;background:${c.color};flex-shrink:0;"></div>
+        <div style="width:10px;height:10px;border-radius:50%;background:${c.color};flex-shrink:0;"></div>
       </div>`;
 
     document.getElementById('expense-cats-list').innerHTML = expense.length > 0
       ? expense.map(renderCat).join('')
-      : '<p class="text-muted text-xs" style="padding:8px 0;">Nenhuma categoria de despesa.</p>';
+      : '<p style="font-size:12px;color:var(--text-3);padding:8px 0;">Nenhuma categoria de despesa.</p>';
 
     document.getElementById('income-cats-list').innerHTML = income.length > 0
       ? income.map(renderCat).join('')
-      : '<p class="text-muted text-xs" style="padding:8px 0;">Nenhuma categoria de receita.</p>';
+      : '<p style="font-size:12px;color:var(--text-3);padding:8px 0;">Nenhuma categoria de receita.</p>';
   }
 
+  // ── Modals ─────────────────────────────────────────────
   function openAccountModal() { document.getElementById('account-modal').classList.add('open'); }
   function closeAccountModal() { document.getElementById('account-modal').classList.remove('open'); }
 
@@ -246,6 +298,7 @@
   }
   function closeCatModal() { document.getElementById('cat-modal').classList.remove('open'); }
 
+  // ── Save ───────────────────────────────────────────────
   async function saveAccount() {
     const name = document.getElementById('acc-name').value.trim();
     if (!name) { Utils.toast('Digite o nome da conta','error'); return; }
@@ -254,12 +307,17 @@
     const res = await API.createAccount({
       name,
       type: document.getElementById('acc-type').value,
-      initial_balance: parseFloat(document.getElementById('acc-balance').value)||0,
+      initial_balance: parseCurrency(document.getElementById('acc-balance').value),
       color: document.getElementById('acc-color').value
     });
     btn.disabled=false; btn.textContent='Salvar Conta';
-    if (res.success) { Utils.toast('✅ Conta criada!'); closeAccountModal(); document.getElementById('acc-name').value=''; document.getElementById('acc-balance').value=''; loadAccounts(); }
-    else Utils.toast(res.error||'Erro','error');
+    if (res.success) {
+      Utils.toast('✅ Conta criada!');
+      closeAccountModal();
+      document.getElementById('acc-name').value='';
+      document.getElementById('acc-balance').value='';
+      loadAccounts();
+    } else Utils.toast(res.error||'Erro','error');
   }
 
   async function saveCategory() {
@@ -273,11 +331,15 @@
       type: document.getElementById('cat-type').value,
       icon: document.getElementById('cat-icon').value,
       color: document.getElementById('cat-color').value,
-      budget_limit: parseFloat(document.getElementById('cat-limit').value)||0
+      budget_limit: parseCurrency(document.getElementById('cat-limit').value)
     });
     btn.disabled=false; btn.textContent='Salvar Categoria';
-    if (res.success) { Utils.toast('✅ Categoria criada!'); closeCatModal(); ['cat-name','cat-sub','cat-limit'].forEach(id=>document.getElementById(id).value=''); loadCategories(); }
-    else Utils.toast(res.error||'Erro','error');
+    if (res.success) {
+      Utils.toast('✅ Categoria criada!');
+      closeCatModal();
+      ['cat-name','cat-sub','cat-limit'].forEach(id => document.getElementById(id).value='');
+      loadCategories();
+    } else Utils.toast(res.error||'Erro','error');
   }
 
   loadAccounts();
