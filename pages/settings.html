@@ -418,16 +418,24 @@
 
   // ── Save ───────────────────────────────────────────────
   async function saveAccount() {
-    const name=document.getElementById('acc-name').value.trim();
-    if (!name) { Utils.toast('Digite o nome da conta','error'); return; }
-    const id=document.getElementById('acc-id').value;
-    const btn=document.getElementById('acc-save-btn'); btn.disabled=true; btn.textContent='Salvando...';
-    const payload={name,type:document.getElementById('acc-type').value,initial_balance:parseCurrency(document.getElementById('acc-balance').value),color:document.getElementById('acc-color').value};
-    const res = id ? await API.call('accounts.update',{account_id:id,...payload}) : await API.createAccount(payload);
-    btn.disabled=false; btn.textContent='Salvar Conta';
-    if (res.success) { Utils.toast(id?'✅ Conta atualizada!':'✅ Conta criada!'); closeAccountModal(); loadAccounts(); }
-    else Utils.toast(res.error||'Erro','error');
-  }
+  const name = document.getElementById('acc-name').value.trim();
+  if (!name) { Utils.toast('Digite o nome da conta','error'); return; }
+  const id = document.getElementById('acc-id').value;
+  const btn = document.getElementById('acc-save-btn');
+  btn.disabled=true; btn.textContent='Salvando...';
+  const balance = parseCurrency(document.getElementById('acc-balance').value) || 0;
+  const payload = {
+    name,
+    type: document.getElementById('acc-type').value,
+    initial_balance: balance,
+    current_balance: balance,  // ← força atualizar o saldo atual também
+    color: document.getElementById('acc-color').value
+  };
+  const res = id ? await API.call('accounts.update',{account_id:id,...payload}) : await API.createAccount(payload);
+  btn.disabled=false; btn.textContent='Salvar Conta';
+  if (res.success) { Utils.toast(id?'✅ Conta atualizada!':'✅ Conta criada!'); closeAccountModal(); loadAccounts(); }
+  else Utils.toast(res.error||'Erro','error');
+},
 
   async function saveCategory() {
     const name=document.getElementById('cat-name').value.trim();
