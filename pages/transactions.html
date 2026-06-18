@@ -473,21 +473,23 @@ document.getElementById('ph-net').textContent=Utils.formatCurrency(incomeReceive
     `;
     document.getElementById('detail-modal').classList.add('open');
   }
-  function closeDetailModal() { document.getElementById('detail-modal').classList.remove('open'); currentDetailTx=null; }
+  function closeDetailModal() {
+  document.getElementById('detail-modal').classList.remove('open');
+}
 
   function editFromDetail() {
-    closeDetailModal();
-    const tx = currentDetailTx;
-    if (!tx) return;
-    document.getElementById('edit-tx-id').value = tx.transaction_id;
-    document.getElementById('edit-desc').value = tx.description;
-    document.getElementById('edit-amount').value = Number(tx.expected_amount).toFixed(2).replace('.',',');
-    document.getElementById('edit-due-date').value = tx.due_date;
-    document.getElementById('edit-notes').value = tx.notes||'';
-    document.getElementById('edit-category').innerHTML='<option value="">Sem categoria</option>'+categories.map(c=>`<option value="${c.category_id}" ${c.category_id===tx.category_id?'selected':''}>${c.icon||''} ${c.name}${c.subcategory?' · '+c.subcategory:''}</option>`).join('');
-    document.getElementById('edit-account').innerHTML='<option value="">Sem conta</option>'+accounts.map(a=>`<option value="${a.account_id}" ${a.account_id===tx.account_id?'selected':''}>${a.name}</option>`).join('');
-    document.getElementById('edit-modal').classList.add('open');
-  }
+  const tx = currentDetailTx;
+  if (!tx) return;
+  document.getElementById('detail-modal').classList.remove('open');
+  document.getElementById('edit-tx-id').value = tx.transaction_id;
+  document.getElementById('edit-desc').value = tx.description;
+  document.getElementById('edit-amount').value = Number(tx.expected_amount).toFixed(2).replace('.',',');
+  document.getElementById('edit-due-date').value = String(tx.due_date).split('T')[0];
+  document.getElementById('edit-notes').value = tx.notes||'';
+  document.getElementById('edit-category').innerHTML='<option value="">Sem categoria</option>'+categories.map(c=>`<option value="${c.category_id}" ${c.category_id===tx.category_id?'selected':''}>${c.icon||''} ${c.name}${c.subcategory?' · '+c.subcategory:''}</option>`).join('');
+  document.getElementById('edit-account').innerHTML='<option value="">Sem conta</option>'+accounts.map(a=>`<option value="${a.account_id}" ${a.account_id===tx.account_id?'selected':''}>${a.name}</option>`).join('');
+  document.getElementById('edit-modal').classList.add('open');
+}
   function closeEditModal() { document.getElementById('edit-modal').classList.remove('open'); }
 
   async function saveEdit() {
