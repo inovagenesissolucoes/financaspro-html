@@ -123,8 +123,9 @@
       document.getElementById('income-paid').textContent     = Utils.formatCurrency(s.income.paid);
       document.getElementById('expense-paid').textContent    = Utils.formatCurrency(s.expense.paid);
 
-      // Saldo previsto = saldo atual - despesas pendentes (receitas pendentes NÃO entram)
-      document.getElementById('net-balance').textContent = Utils.formatCurrency(s.total_balance - s.expense.pending);
+      // Saldo previsto = Recebido - (A pagar + Pago)
+const saldoPrevisto = s.income.paid - (s.expense.pending + s.expense.paid);
+document.getElementById('net-balance').textContent = Utils.formatCurrency(saldoPrevisto);
       document.getElementById('overdue-count').textContent = s.overdue_count + (s.overdue_count===1?' conta':' contas');
 
       if (s.overdue_count > 0) {
