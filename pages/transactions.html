@@ -657,17 +657,22 @@ document.getElementById('ph-net').textContent=Utils.formatCurrency(incomeReceive
   function closeCardModal() { document.getElementById('card-modal').classList.remove('open'); }
 
   async function saveCardPurchase() {
-    const desc=document.getElementById('cm-desc').value.trim();
-    const amount=parseCurrency(document.getElementById('cm-amount').value);
-    const date=document.getElementById('cm-date').value;
-    const cardId=document.getElementById('cm-card').value;
-    if (!desc||!amount||!date||!cardId) { Utils.toast('Preencha todos os campos obrigatórios','error'); return; }
-    const btn=document.getElementById('cm-save-btn'); btn.disabled=true; btn.textContent='Salvando...';
-    const res=await API.createTransaction({type:'expense',description:desc,expected_amount:amount,due_date:date,card_id:cardId,category_id:document.getElementById('cm-category').value});
-    btn.disabled=false; btn.textContent='Registrar Compra';
-    if (res.success) { Utils.toast('✅ Compra registrada!'); closeCardModal(); ['cm-desc','cm-amount'].forEach(id=>document.getElementById(id).value=''); load(); }
-    else Utils.toast(res.error||'Erro','error');
+  const desc=document.getElementById('cm-desc').value.trim();
+  const amount=parseCurrency(document.getElementById('cm-amount').value);
+  const date=document.getElementById('cm-date').value;
+  const cardId=document.getElementById('cm-card').value;
+  if (!desc||!amount||!date||!cardId) { Utils.toast('Preencha todos os campos obrigatórios','error'); return; }
+  const btn=document.getElementById('cm-save-btn'); btn.disabled=true; btn.textContent='Salvando...';
+  // Cria a compra
+  const res=await API.createTransaction({type:'expense',description:desc,expected_amount:amount,due_date:date,card_id:cardId,category_id:document.getElementById('cm-category').value});
+  if (res.success) {
+    // Marca automaticamente como paga — você já comprou, o limite já foi usado
+    await API.markPaid({transaction_id:res.data.transaction_id,paid_date:date,actual_amount:amount});
   }
+  btn.disabled=false; btn.textContent='Registrar Compra';
+  if (res.success) { Utils.toast('✅ Compra registrada!'); closeCardModal(); ['cm-desc','cm-amount'].forEach(id=>document.getElementById(id).value=''); load(); }
+  else Utils.toast(res.error||'Erro','error');
+}
 
   function openTransferModal() {
     closeTypeSelector();
