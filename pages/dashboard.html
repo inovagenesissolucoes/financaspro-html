@@ -116,6 +116,8 @@
     if (!sumRes.success) return;
     const s = sumRes.data;
 
+    console.log('DEBUG:', s.total_balance, s.expense.pending, s.income.pending);
+
     document.getElementById('total-balance').textContent   = Utils.formatCurrency(s.total_balance);
     document.getElementById('income-pending').textContent  = Utils.formatCurrency(s.income.pending);
     document.getElementById('expense-pending').textContent = Utils.formatCurrency(s.expense.pending);
