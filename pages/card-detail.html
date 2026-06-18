@@ -216,11 +216,19 @@
     const statusLabel = inv ? (inv.status==='paid' ? '✅ Fatura paga' : inv.status==='closed' ? '🔒 Fatura fechada' : '🔓 Fatura aberta') : '🔓 Fatura aberta';
     document.getElementById('invoice-status').textContent = statusLabel;
 
-    const today = new Date();
-    const closeDate = new Date(today.getFullYear(), today.getMonth(), card.closing_day);
-    const dueDate = new Date(today.getFullYear(), today.getMonth(), card.due_day);
-    document.getElementById('closing-date').textContent = closeDate.toLocaleDateString('pt-BR', {day:'2-digit', month:'short'});
-    document.getElementById('due-date').textContent = dueDate.toLocaleDateString('pt-BR', {day:'2-digit', month:'short'});
+    // Usa a data real da fatura atual
+if (inv && inv.due_date) {
+  const dueDate = new Date(String(inv.due_date) + 'T12:00:00');
+  document.getElementById('due-date').textContent = dueDate.toLocaleDateString('pt-BR', {day:'2-digit', month:'short'});
+  // Data de fechamento: 1 mês antes da data de vencimento (no dia closing_day)
+  const closeDate = new Date(dueDate);
+  closeDate.setMonth(closeDate.getMonth() - 1);
+  closeDate.setDate(card.closing_day);
+  document.getElementById('closing-date').textContent = closeDate.toLocaleDateString('pt-BR', {day:'2-digit', month:'short'});
+} else {
+  document.getElementById('closing-date').textContent = '--';
+  document.getElementById('due-date').textContent = '--';
+}
   }
 
   function setTab(tab, el) {
