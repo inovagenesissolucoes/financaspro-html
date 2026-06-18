@@ -333,9 +333,13 @@
 
     const income = allTx.filter(t=>t.type==='income'&&t.status!=='cancelled');
     const expense = allTx.filter(t=>t.type==='expense'&&t.status!=='cancelled');
-    document.getElementById('ph-income').textContent=Utils.formatCurrency(income.reduce((s,t)=>s+Number(t.expected_amount||0),0));
-    document.getElementById('ph-expense').textContent=Utils.formatCurrency(expense.reduce((s,t)=>s+Number(t.expected_amount||0),0));
-    document.getElementById('ph-net').textContent=Utils.formatCurrency(income.reduce((s,t)=>s+Number(t.expected_amount||0),0)-expense.reduce((s,t)=>s+Number(t.expected_amount||0),0));
+    // Receitas = apenas o que foi de fato recebido
+const incomeReceived = income.filter(t=>t.status==='paid').reduce((s,t)=>s+Number(t.actual_amount||t.expected_amount||0),0);
+// Despesas = pagas + pendentes (previsto + pago)
+const expenseTotal = expense.reduce((s,t)=>s+Number(t.status==='paid'?(t.actual_amount||t.expected_amount):t.expected_amount||0),0);
+document.getElementById('ph-income').textContent=Utils.formatCurrency(incomeReceived);
+document.getElementById('ph-expense').textContent=Utils.formatCurrency(expenseTotal);
+document.getElementById('ph-net').textContent=Utils.formatCurrency(incomeReceived - expenseTotal);
     renderList();
   }
 
