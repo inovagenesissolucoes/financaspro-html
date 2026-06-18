@@ -402,67 +402,89 @@
   }
 
   function renderCard(tx) {
-    const today = new Date().toISOString().split('T')[0];
-    const isOverdue = tx.status!=='paid' && tx.due_date < today && tx.type==='expense';
-    const cat  = categories.find(c=>c.category_id===tx.category_id);
-    const acc  = accounts.find(a=>a.account_id===tx.account_id);
-    const card = cards.find(c=>c.card_id===tx.card_id);
-    const icon = cat?.icon||(tx.card_id?'💳':tx.type==='income'?'💼':'💰');
-    const sub  = [cat?.name+(cat?.subcategory?' · '+cat.subcategory:''), acc?.name||card?.name].filter(Boolean).join(' · ');
-    const virtualTag = tx._virtual ? '<span class="badge" style="background:var(--accent-light);color:var(--accent-2);margin-left:4px;">🔄 Fixo</span>' : '';
-    const pastTag = tx._overdue_from_past ? `<span class="badge" style="background:#FEF3C7;color:#92400E;margin-left:4px;">📅 ${Utils.formatMonth(String(tx.due_date).slice(0,7))}</span>` : '';
-    const instTag = tx.installment_number ? `<span class="badge" style="background:#FEF3C7;color:#92400E;margin-left:4px;">📌 ${tx.installment_number}ª parc.</span>` : '';
+  const today = new Date().toISOString().split('T')[0];
+  const isOverdue = tx.status!=='paid' && tx.due_date < today && tx.type==='expense';
 
-    let badge='';
-    if (tx.status==='paid') {
-      badge = `<span class="badge b-paid">${tx.type==='income'?'✓ Recebido':'✓ Pago'}</span>`;
-    } else if (isOverdue) {
-      badge = `<span class="badge b-over">⚠ Venceu ${Utils.formatDate(tx.due_date)}</span>`;
-    } else if (tx.type==='income' && tx.due_date < today) {
-      badge = `<span class="badge b-pend">📥 Previsto ${Utils.formatDate(tx.due_date)}</span>`;
-    } else {
-      badge = `<span class="badge b-pend">${tx.type==='income'?'Previsto':'Vence'} ${Utils.formatDate(tx.due_date)}</span>`;
-    }
+  // Fatura tem renderização especial
+  if (tx._is_invoice) {
+    const inv = tx._invoice;
+    const card = tx._card;
+    const cardColor = card?.color || '#6D28D9';
+    const purchaseCount = inv.transactions?.length || 0;
+    const statusLabel = inv.status === 'paid' ? '✓ Paga' : inv.status === 'closed' ? '🔒 Fechada' : '🔓 Aberta';
+    const badgeColor = inv.status === 'paid' ? 'var(--green)' : isOverdue ? 'var(--red)' : 'var(--accent-2)';
 
-    let amtHtml='';
-    if (tx.status==='paid'&&tx.actual_amount&&Math.abs(Number(tx.actual_amount)-Number(tx.expected_amount))>0.01) {
-      const diff=Number(tx.actual_amount)-Number(tx.expected_amount);
-      const isBad=tx.type==='expense'?diff>0:diff<0;
-      const diffLabel=tx.type==='expense'?(diff>0?`+${Utils.formatCurrency(diff)} juros`:`${Utils.formatCurrency(Math.abs(diff))} desconto`):(diff>0?`+${Utils.formatCurrency(diff)} a mais`:`${Utils.formatCurrency(Math.abs(diff))} a menos`);
-      amtHtml=`<div class="tx-amt ${tx.type==='income'?'tx-pos':'tx-neg'}">${tx.type==='income'?'+':'-'}${Utils.formatCurrency(tx.actual_amount)}</div><div style="font-size:9px;color:${isBad?'var(--red)':'var(--green)'};">${diffLabel}</div>`;
-    } else {
-      const amt=tx.status==='paid'?Number(tx.actual_amount||tx.expected_amount):Number(tx.expected_amount);
-      amtHtml=`<div class="tx-amt ${tx.type==='income'?'tx-pos':'tx-neg'}">${tx.type==='income'?'+':'-'}${Utils.formatCurrency(amt)}</div>`;
-    }
-
-    let payBtn='';
-    if (tx.status==='pending') {
-      const label = tx.type==='income' ? 'Confirmar' : 'Pagar';
-      if (tx._virtual) {
-        const rec=tx._rec;
-        const safeDesc=rec.description.replace(/'/g,"\\'");
-        payBtn=`<button class="pay-btn" onclick="event.stopPropagation();payVirtual('${rec.recurrence_id}','${tx.due_date}','${rec.type}','${safeDesc}',${rec.expected_amount},'${rec.category_id||''}')">${label}</button>`;
-      } else {
-        const safeDesc=tx.description.replace(/'/g,"\\'");
-        payBtn=`<button class="pay-btn" onclick="event.stopPropagation();openPayModal('${tx.transaction_id}','${tx.account_id||''}',${tx.expected_amount},'${tx.type}','${safeDesc}','${tx.due_date}')">${label}</button>`;
-      }
-    }
-
-    // Card clicável para abrir detalhes (exceto virtuais)
-    const clickable = !tx._virtual;
-    const cardClick = clickable ? `onclick="openDetailModal('${tx.transaction_id}')"` : '';
-    const cardStyle = clickable ? 'cursor:pointer;' : '';
-
-    return `<div class="tx-card ${isOverdue?'overdue':''}" style="${cardStyle}" ${cardClick}>
-      <div class="tx-ico" style="background:${(cat?.color||'#6366F1')}22;">${icon}</div>
+    return `<div class="tx-card ${isOverdue?'overdue':''}" style="cursor:pointer;" onclick="window.location.href='card-detail.html?id=${card?.card_id}'">
+      <div class="tx-ico" style="background:${cardColor}22;color:${cardColor};font-size:18px;">💳</div>
       <div class="tx-body">
         <div class="tx-name">${tx.description}</div>
-        <div class="tx-cat">${sub}</div>
-        <div>${badge}${virtualTag}${pastTag}${instTag}</div>
+        <div class="tx-cat">${purchaseCount} compra${purchaseCount!==1?'s':''}${isOverdue ? ' · Venceu '+Utils.formatDate(tx.due_date) : ' · Vence '+Utils.formatDate(tx.due_date)}</div>
+        <div><span class="badge" style="background:${badgeColor}22;color:${badgeColor};">${statusLabel}</span></div>
       </div>
-      <div class="tx-right">${amtHtml}${payBtn}</div>
+      <div class="tx-right">
+        <div class="tx-amt tx-neg">-${Utils.formatCurrency(tx.expected_amount)}</div>
+        ${inv.status !== 'paid' && inv.status === 'closed' ? `<button class="pay-btn" onclick="event.stopPropagation();payInvoice('${inv.invoice_id}',${inv.total_amount})">Pagar</button>` : ''}
+      </div>
     </div>`;
   }
+
+  const cat  = categories.find(c=>c.category_id===tx.category_id);
+  const acc  = accounts.find(a=>a.account_id===tx.account_id);
+  const icon = cat?.icon||(tx.type==='income'?'💼':'💰');
+  const sub  = [cat?.name+(cat?.subcategory?' · '+cat.subcategory:''), acc?.name].filter(Boolean).join(' · ');
+  const virtualTag = tx._virtual ? '<span class="badge" style="background:var(--accent-light);color:var(--accent-2);margin-left:4px;">🔄 Fixo</span>' : '';
+  const pastTag = tx._overdue_from_past ? `<span class="badge" style="background:#FEF3C7;color:#92400E;margin-left:4px;">📅 ${Utils.formatMonth(String(tx.due_date).slice(0,7))}</span>` : '';
+  const instTag = tx.installment_number ? `<span class="badge" style="background:#FEF3C7;color:#92400E;margin-left:4px;">📌 ${tx.installment_number}ª parc.</span>` : '';
+
+  let badge='';
+  if (tx.status==='paid') {
+    badge = `<span class="badge b-paid">${tx.type==='income'?'✓ Recebido':'✓ Pago'}</span>`;
+  } else if (isOverdue) {
+    badge = `<span class="badge b-over">⚠ Venceu ${Utils.formatDate(tx.due_date)}</span>`;
+  } else if (tx.type==='income' && tx.due_date < today) {
+    badge = `<span class="badge b-pend">📥 Previsto ${Utils.formatDate(tx.due_date)}</span>`;
+  } else {
+    badge = `<span class="badge b-pend">${tx.type==='income'?'Previsto':'Vence'} ${Utils.formatDate(tx.due_date)}</span>`;
+  }
+
+  let amtHtml='';
+  if (tx.status==='paid'&&tx.actual_amount&&Math.abs(Number(tx.actual_amount)-Number(tx.expected_amount))>0.01) {
+    const diff=Number(tx.actual_amount)-Number(tx.expected_amount);
+    const isBad=tx.type==='expense'?diff>0:diff<0;
+    const diffLabel=tx.type==='expense'?(diff>0?`+${Utils.formatCurrency(diff)} juros`:`${Utils.formatCurrency(Math.abs(diff))} desconto`):(diff>0?`+${Utils.formatCurrency(diff)} a mais`:`${Utils.formatCurrency(Math.abs(diff))} a menos`);
+    amtHtml=`<div class="tx-amt ${tx.type==='income'?'tx-pos':'tx-neg'}">${tx.type==='income'?'+':'-'}${Utils.formatCurrency(tx.actual_amount)}</div><div style="font-size:9px;color:${isBad?'var(--red)':'var(--green)'};">${diffLabel}</div>`;
+  } else {
+    const amt=tx.status==='paid'?Number(tx.actual_amount||tx.expected_amount):Number(tx.expected_amount);
+    amtHtml=`<div class="tx-amt ${tx.type==='income'?'tx-pos':'tx-neg'}">${tx.type==='income'?'+':'-'}${Utils.formatCurrency(amt)}</div>`;
+  }
+
+  let payBtn='';
+  if (tx.status==='pending') {
+    const label = tx.type==='income' ? 'Confirmar' : 'Pagar';
+    if (tx._virtual) {
+      const rec=tx._rec;
+      const safeDesc=rec.description.replace(/'/g,"\\'");
+      payBtn=`<button class="pay-btn" onclick="event.stopPropagation();payVirtual('${rec.recurrence_id}','${tx.due_date}','${rec.type}','${safeDesc}',${rec.expected_amount},'${rec.category_id||''}')">${label}</button>`;
+    } else {
+      const safeDesc=tx.description.replace(/'/g,"\\'");
+      payBtn=`<button class="pay-btn" onclick="event.stopPropagation();openPayModal('${tx.transaction_id}','${tx.account_id||''}',${tx.expected_amount},'${tx.type}','${safeDesc}','${tx.due_date}')">${label}</button>`;
+    }
+  }
+
+  const clickable = !tx._virtual;
+  const cardClick = clickable ? `onclick="openDetailModal('${tx.transaction_id}')"` : '';
+  const cardStyle = clickable ? 'cursor:pointer;' : '';
+
+  return `<div class="tx-card ${isOverdue?'overdue':''}" style="${cardStyle}" ${cardClick}>
+    <div class="tx-ico" style="background:${(cat?.color||'#6366F1')}22;">${icon}</div>
+    <div class="tx-body">
+      <div class="tx-name">${tx.description}</div>
+      <div class="tx-cat">${sub}</div>
+      <div>${badge}${virtualTag}${pastTag}${instTag}</div>
+    </div>
+    <div class="tx-right">${amtHtml}${payBtn}</div>
+  </div>`;
+}
 
   // ── Detail modal ──────────────────────────────────────────
   function openDetailModal(txId) {
