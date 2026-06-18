@@ -99,6 +99,8 @@
   }
 
   async function load() {
+    console.log('load iniciou');
+  try {
     const user = Auth.getUser();
     document.getElementById('user-name').textContent = (user?.name?.split(' ')[0]||'') + ' 👋';
 
@@ -152,6 +154,10 @@
     } else {
       document.getElementById('accounts-list').innerHTML = '<p style="font-size:12px;color:var(--text-3);padding:8px 0;">Nenhuma conta. <a href="settings.html" style="color:var(--accent-2);">Cadastrar →</a></p>';
     }
+    } catch(e) {
+    console.error('ERRO no load:', e);
+  }
+}
 
     const cats = catRes.success ? catRes.data : [];
     if (cats.length > 0) {
