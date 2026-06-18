@@ -217,18 +217,18 @@
     document.getElementById('invoice-status').textContent = statusLabel;
 
     // Usa a data real da fatura atual
-if (inv && inv.due_date) {
-  const dueDate = new Date(String(inv.due_date) + 'T12:00:00');
-  document.getElementById('due-date').textContent = dueDate.toLocaleDateString('pt-BR', {day:'2-digit', month:'short'});
-  // Data de fechamento: 1 mês antes da data de vencimento (no dia closing_day)
-  const closeDate = new Date(dueDate);
-  closeDate.setMonth(closeDate.getMonth() - 1);
-  closeDate.setDate(card.closing_day);
-  document.getElementById('closing-date').textContent = closeDate.toLocaleDateString('pt-BR', {day:'2-digit', month:'short'});
-} else {
-  document.getElementById('closing-date').textContent = '--';
-  document.getElementById('due-date').textContent = '--';
-}
+    if (inv && inv.due_date) {
+      const dueDate = new Date(String(inv.due_date).split('T')[0] + 'T12:00:00');
+      document.getElementById('due-date').textContent = dueDate.toLocaleDateString('pt-BR', {day:'2-digit', month:'short'});
+      // Data de fechamento: 1 mês antes da data de vencimento (no dia closing_day)
+      const closeDate = new Date(dueDate);
+      closeDate.setMonth(closeDate.getMonth() - 1);
+      closeDate.setDate(card.closing_day);
+      document.getElementById('closing-date').textContent = closeDate.toLocaleDateString('pt-BR', {day:'2-digit', month:'short'});
+    } else {
+      document.getElementById('closing-date').textContent = '--';
+      document.getElementById('due-date').textContent = '--';
+    }
   }
 
   function setTab(tab, el) {
@@ -387,13 +387,15 @@ if (inv && inv.due_date) {
       insights.push({icon:'📝',title:`${invoiceTx.length} compra${invoiceTx.length>1?'s':''} no ciclo`,desc:`Média de ${Utils.formatCurrency(total/invoiceTx.length)} por compra.`});
     }
 
-    // Insight 6: dias até vencimento
-    const today = new Date();
-    const dueDate = new Date(today.getFullYear(), today.getMonth(), card.due_day);
-    if (dueDate < today) dueDate.setMonth(dueDate.getMonth()+1);
-    const daysUntilDue = Math.ceil((dueDate - today) / (1000*60*60*24));
-    if (daysUntilDue <= 5 && total > 0) {
-      insights.push({icon:'⏰',title:`Fatura vence em ${daysUntilDue} dia${daysUntilDue!==1?'s':''}`,desc:`Prepare-se para pagar ${Utils.formatCurrency(total)} até ${dueDate.toLocaleDateString('pt-BR')}.`});
+    // Insight 6: dias até vencimento (usando data real da fatura)
+    if (card.current_invoice && card.current_invoice.due_date && total > 0) {
+      const today = new Date();
+      today.setHours(0,0,0,0);
+      const dueDate = new Date(String(card.current_invoice.due_date).split('T')[0] + 'T12:00:00');
+      const daysUntilDue = Math.ceil((dueDate - today) / (1000*60*60*24));
+      if (daysUntilDue >= 0 && daysUntilDue <= 10) {
+        insights.push({icon:'⏰',title:`Fatura vence em ${daysUntilDue} dia${daysUntilDue!==1?'s':''}`,desc:`Prepare-se para pagar ${Utils.formatCurrency(total)} até ${dueDate.toLocaleDateString('pt-BR')}.`});
+      }
     }
 
     if (insights.length === 0) {
