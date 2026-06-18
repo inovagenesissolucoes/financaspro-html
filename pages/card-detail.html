@@ -220,19 +220,16 @@
     if (inv && inv.due_date) {
   const dueDate = new Date(String(inv.due_date).split('T')[0] + 'T12:00:00');
   document.getElementById('due-date').textContent = dueDate.toLocaleDateString('pt-BR', {day:'2-digit', month:'short'});
-  // Fechamento: mesmo mês do vencimento se closing_day < due_day, senão mês anterior
   const closeDate = new Date(dueDate);
   if (Number(card.closing_day) >= Number(card.due_day)) {
     closeDate.setMonth(closeDate.getMonth() - 1);
   }
   closeDate.setDate(Number(card.closing_day));
   document.getElementById('closing-date').textContent = closeDate.toLocaleDateString('pt-BR', {day:'2-digit', month:'short'});
+} else {
+  document.getElementById('closing-date').textContent = '--';
+  document.getElementById('due-date').textContent = '--';
 }
-    } else {
-      document.getElementById('closing-date').textContent = '--';
-      document.getElementById('due-date').textContent = '--';
-    }
-  }
 
   function setTab(tab, el) {
     activeTab = tab;
