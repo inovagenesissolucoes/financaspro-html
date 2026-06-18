@@ -292,7 +292,7 @@
       API.listTransactions({month}), API.listCategories(), API.listAccounts(), API.listCards(), API.listRecurrences()
     ]);
 
-    allTx = txRes.success ? txRes.data : [];
+    allTx = txRes.success ? txRes.data.filter(t => !t.card_id) : [];
     categories = catRes.success ? catRes.data : [];
     accounts = accRes.success ? accRes.data : [];
     cards = cardRes.success ? cardRes.data : [];
