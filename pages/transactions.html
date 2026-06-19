@@ -463,7 +463,8 @@
         payBtn=`<button class="pay-btn" onclick="event.stopPropagation();payVirtual('${rec.recurrence_id}','${tx.due_date}','${rec.type}','${safeDesc}',${rec.expected_amount},'${rec.category_id||''}')">${label}</button>`;
       } else {
         const safeDesc=tx.description.replace(/'/g,"\\'");
-        payBtn=`<button class="pay-btn" onclick="event.stopPropagation();openPayModal('${tx.transaction_id}','${tx.account_id||''}',${tx.expected_amount},'${tx.type}','${safeDesc}','${tx.due_date}')">${label}</button>`;
+        const safeDueDate = String(tx.due_date).split('T')[0];
+payBtn=`<button class="pay-btn" onclick="event.stopPropagation();openPayModal('${tx.transaction_id}','${tx.account_id||''}',${tx.expected_amount},'${tx.type}','${safeDesc}','${safeDueDate}')">${label}</button>`;
       }
     }
 
@@ -603,7 +604,7 @@
     document.getElementById('pay-type').value=type;
     document.getElementById('pay-expected-display').textContent=Utils.formatCurrency(expected);
     document.getElementById('pay-tx-name').textContent=name;
-    document.getElementById('pay-due-date').value=dueDate||'';
+    document.getElementById('pay-due-date').value = dueDate ? String(dueDate).split('T')[0] : '';
     document.getElementById('pay-date').value=new Date().toISOString().split('T')[0];
     document.getElementById('pay-amount').value=Number(expected).toFixed(2).replace('.',',');
     document.getElementById('pay-diff-box').style.display='none';
