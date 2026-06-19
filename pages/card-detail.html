@@ -399,93 +399,95 @@ let sortedInvoices = []; // todas as faturas ordenadas
   }
 
   function renderInsights(container) {
-    const insights = [];
-    const total = invoiceTx.reduce((s,t)=>s+Number(t.expected_amount||0), 0);
-    const limit = Number(card.limit_amount)||0;
-    const pct = limit>0 ? (total/limit)*100 : 0;
+  const insights = [];
+  const total = invoiceTx.reduce((s,t)=>s+Number(t.expected_amount||0), 0);
+  const limit = Number(card.limit_amount)||0;
+  const pct = limit>0 ? (total/limit)*100 : 0;
+  const currentInv = sortedInvoices[currentInvoiceIndex] || null;
 
-    if (pct > 80) {
-      insights.push({icon:'⚠️',title:'Limite quase no teto',desc:`Você já usou ${Math.round(pct)}% do seu limite. Considere quitar parte da fatura ou reduzir gastos.`});
-    } else if (pct > 50) {
-      insights.push({icon:'📊',title:'Uso moderado do limite',desc:`Você utilizou ${Math.round(pct)}% do limite disponível neste ciclo.`});
-    } else if (pct < 30 && total > 0) {
-      insights.push({icon:'✅',title:'Uso saudável',desc:`Você está usando apenas ${Math.round(pct)}% do seu limite. Continue assim!`});
-    }
-
-    const sortedInvs = [...allInvoices].sort((a,b)=>String(b.reference_month).localeCompare(String(a.reference_month)));
-    const currentInv = card.current_invoice;
-    const lastInv = sortedInvs.find(i => i.invoice_id !== currentInv?.invoice_id);
-    if (lastInv && currentInv) {
-      const lastTotal = Number(lastInv.total_amount)||0;
-      const currTotal = Number(currentInv.total_amount)||0;
-      if (lastTotal > 0) {
-        const diff = currTotal - lastTotal;
-        const diffPct = Math.round((diff/lastTotal)*100);
-        if (diff > 0) {
-          insights.push({icon:'📈',title:`Gastos ${diffPct}% maiores`,desc:`Você está gastando ${Utils.formatCurrency(Math.abs(diff))} a mais que o ciclo anterior (${Utils.formatCurrency(lastTotal)}).`});
-        } else if (diff < 0) {
-          insights.push({icon:'📉',title:`Economia de ${Math.abs(diffPct)}%`,desc:`Você está gastando ${Utils.formatCurrency(Math.abs(diff))} a menos que o ciclo anterior. Parabéns!`});
-        }
-      }
-    }
-
-    const catBreakdown = {};
-    invoiceTx.forEach(t => {
-      const catId = t.category_id || 'uncategorized';
-      const cat = categories.find(c => c.category_id === catId);
-      const name = cat?.name || 'Sem categoria';
-      if (!catBreakdown[name]) catBreakdown[name] = 0;
-      catBreakdown[name] += Number(t.expected_amount||0);
-    });
-    const topCat = Object.entries(catBreakdown).sort((a,b)=>b[1]-a[1])[0];
-    if (topCat && total > 0) {
-      const catPct = Math.round((topCat[1]/total)*100);
-      if (catPct > 40) {
-        insights.push({icon:'🎯',title:`Concentração em ${topCat[0]}`,desc:`${catPct}% dos seus gastos estão em "${topCat[0]}" (${Utils.formatCurrency(topCat[1])}). Avalie se há oportunidade de equilibrar.`});
-      } else {
-        insights.push({icon:'🍕',title:`Maior gasto: ${topCat[0]}`,desc:`Sua maior categoria é "${topCat[0]}" com ${Utils.formatCurrency(topCat[1])} (${catPct}% do total).`});
-      }
-    }
-
-    if (invoiceTx.length > 0) {
-      const biggest = [...invoiceTx].sort((a,b)=>Number(b.expected_amount)-Number(a.expected_amount))[0];
-      const biggestPct = total>0 ? Math.round((Number(biggest.expected_amount)/total)*100) : 0;
-      if (biggestPct > 30) {
-        insights.push({icon:'💰',title:'Compra de destaque',desc:`"${biggest.description}" representa ${biggestPct}% da fatura (${Utils.formatCurrency(biggest.expected_amount)}).`});
-      }
-    }
-
-    if (invoiceTx.length >= 20) {
-      insights.push({icon:'🔢',title:`${invoiceTx.length} compras no ciclo`,desc:`Média de ${Utils.formatCurrency(total/invoiceTx.length)} por compra. Muitas transações pequenas podem indicar gastos impulsivos.`});
-    } else if (invoiceTx.length > 0) {
-      insights.push({icon:'📝',title:`${invoiceTx.length} compra${invoiceTx.length>1?'s':''} no ciclo`,desc:`Média de ${Utils.formatCurrency(total/invoiceTx.length)} por compra.`});
-    }
-
-    if (card.current_invoice && card.current_invoice.due_date && total > 0) {
-      const today = new Date();
-      today.setHours(0,0,0,0);
-      const dueDate = new Date(String(card.current_invoice.due_date).split('T')[0] + 'T12:00:00');
-      const daysUntilDue = Math.ceil((dueDate - today) / (1000*60*60*24));
-      if (daysUntilDue >= 0 && daysUntilDue <= 10) {
-        insights.push({icon:'⏰',title:`Fatura vence em ${daysUntilDue} dia${daysUntilDue!==1?'s':''}`,desc:`Prepare-se para pagar ${Utils.formatCurrency(total)} até ${dueDate.toLocaleDateString('pt-BR')}.`});
-      }
-    }
-
-    if (insights.length === 0) {
-      container.innerHTML = `<div style="text-align:center;padding:32px 16px;color:var(--text-3);font-size:13px;">Sem dados suficientes para gerar insights. Faça compras no cartão para começar a ver análises.</div>`;
-      return;
-    }
-
-    container.innerHTML = insights.map(i => `
-      <div class="insight-card">
-        <div class="insight-icon">${i.icon}</div>
-        <div style="flex:1;">
-          <div class="insight-title">${i.title}</div>
-          <div class="insight-desc">${i.desc}</div>
-        </div>
-      </div>
-    `).join('');
+  if (pct > 80) {
+    insights.push({icon:'⚠️',title:'Limite quase no teto',desc:`Você já usou ${Math.round(pct)}% do seu limite. Considere quitar parte da fatura ou reduzir gastos.`});
+  } else if (pct > 50) {
+    insights.push({icon:'📊',title:'Uso moderado do limite',desc:`Você utilizou ${Math.round(pct)}% do limite disponível neste ciclo.`});
+  } else if (pct < 30 && total > 0) {
+    insights.push({icon:'✅',title:'Uso saudável',desc:`Você está usando apenas ${Math.round(pct)}% do seu limite. Continue assim!`});
   }
+
+  // Compara com a fatura imediatamente anterior à atual
+  const prevInv = currentInvoiceIndex > 0 ? sortedInvoices[currentInvoiceIndex - 1] : null;
+  if (prevInv && currentInv) {
+    const lastTotal = Number(prevInv.total_amount)||0;
+    const currTotal = Number(currentInv.total_amount)||0;
+    if (lastTotal > 0) {
+      const diff = currTotal - lastTotal;
+      const diffPct = Math.round((diff/lastTotal)*100);
+      if (diff > 0) {
+        insights.push({icon:'📈',title:`Gastos ${diffPct}% maiores`,desc:`Esta fatura tem ${Utils.formatCurrency(Math.abs(diff))} a mais que a anterior (${Utils.formatCurrency(lastTotal)}).`});
+      } else if (diff < 0) {
+        insights.push({icon:'📉',title:`Economia de ${Math.abs(diffPct)}%`,desc:`Esta fatura tem ${Utils.formatCurrency(Math.abs(diff))} a menos que a anterior. Parabéns!`});
+      }
+    }
+  }
+
+  const catBreakdown = {};
+  invoiceTx.forEach(t => {
+    const catId = t.category_id || 'uncategorized';
+    const cat = categories.find(c => c.category_id === catId);
+    const name = cat?.name || 'Sem categoria';
+    if (!catBreakdown[name]) catBreakdown[name] = 0;
+    catBreakdown[name] += Number(t.expected_amount||0);
+  });
+  const topCat = Object.entries(catBreakdown).sort((a,b)=>b[1]-a[1])[0];
+  if (topCat && total > 0) {
+    const catPct = Math.round((topCat[1]/total)*100);
+    if (catPct > 40) {
+      insights.push({icon:'🎯',title:`Concentração em ${topCat[0]}`,desc:`${catPct}% dos seus gastos estão em "${topCat[0]}" (${Utils.formatCurrency(topCat[1])}). Avalie se há oportunidade de equilibrar.`});
+    } else {
+      insights.push({icon:'🍕',title:`Maior gasto: ${topCat[0]}`,desc:`Sua maior categoria é "${topCat[0]}" com ${Utils.formatCurrency(topCat[1])} (${catPct}% do total).`});
+    }
+  }
+
+  if (invoiceTx.length > 0) {
+    const biggest = [...invoiceTx].sort((a,b)=>Number(b.expected_amount)-Number(a.expected_amount))[0];
+    const biggestPct = total>0 ? Math.round((Number(biggest.expected_amount)/total)*100) : 0;
+    if (biggestPct > 30) {
+      insights.push({icon:'💰',title:'Compra de destaque',desc:`"${biggest.description}" representa ${biggestPct}% da fatura (${Utils.formatCurrency(biggest.expected_amount)}).`});
+    }
+  }
+
+  if (invoiceTx.length >= 20) {
+    insights.push({icon:'🔢',title:`${invoiceTx.length} compras no ciclo`,desc:`Média de ${Utils.formatCurrency(total/invoiceTx.length)} por compra. Muitas transações pequenas podem indicar gastos impulsivos.`});
+  } else if (invoiceTx.length > 0) {
+    insights.push({icon:'📝',title:`${invoiceTx.length} compra${invoiceTx.length>1?'s':''} no ciclo`,desc:`Média de ${Utils.formatCurrency(total/invoiceTx.length)} por compra.`});
+  }
+
+  if (currentInv && currentInv.due_date && total > 0) {
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const dueDate = new Date(String(currentInv.due_date).split('T')[0] + 'T12:00:00');
+    const daysUntilDue = Math.ceil((dueDate - today) / (1000*60*60*24));
+    if (daysUntilDue >= 0 && daysUntilDue <= 10) {
+      insights.push({icon:'⏰',title:`Fatura vence em ${daysUntilDue} dia${daysUntilDue!==1?'s':''}`,desc:`Prepare-se para pagar ${Utils.formatCurrency(total)} até ${dueDate.toLocaleDateString('pt-BR')}.`});
+    } else if (daysUntilDue < 0 && currentInv.status !== 'paid') {
+      insights.push({icon:'🚨',title:`Fatura vencida há ${Math.abs(daysUntilDue)} dia${Math.abs(daysUntilDue)!==1?'s':''}`,desc:`Esta fatura deveria ter sido paga em ${dueDate.toLocaleDateString('pt-BR')}.`});
+    }
+  }
+
+  if (insights.length === 0) {
+    container.innerHTML = `<div style="text-align:center;padding:32px 16px;color:var(--text-3);font-size:13px;">Sem dados suficientes para gerar insights. Faça compras no cartão para começar a ver análises.</div>`;
+    return;
+  }
+
+  container.innerHTML = insights.map(i => `
+    <div class="insight-card">
+      <div class="insight-icon">${i.icon}</div>
+      <div style="flex:1;">
+        <div class="insight-title">${i.title}</div>
+        <div class="insight-desc">${i.desc}</div>
+      </div>
+    </div>
+  `).join('');
+}
 
   function renderEditPresets() {
     document.getElementById('e-preset-colors').innerHTML = PRESETS.map(p => `
