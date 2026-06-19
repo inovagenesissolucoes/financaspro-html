@@ -374,15 +374,15 @@
     const income = allTx.filter(t=>t.type==='income'&&t.status!=='cancelled');
     const expense = allTx.filter(t=>t.type==='expense'&&t.status!=='cancelled');
     // Receitas: só o que recebi de fato
-const incomeReceived = income.filter(t=>t.status==='paid').reduce((s,t)=>s+Number(t.actual_amount||t.expected_amount||0),0);
-// Despesas: total do mês (pago + pendente)
-const expenseTotal = expense.reduce((s,t)=>s+Number(t.status==='paid'?(t.actual_amount||t.expected_amount):t.expected_amount||0),0);
-// Já pago: só o que de fato saiu da conta
-const expensePaid = expense.filter(t=>t.status==='paid').reduce((s,t)=>s+Number(t.actual_amount||t.expected_amount||0),0);
-// Saldo = Recebido - Pago (sobra real depois dos pagamentos)
-document.getElementById('ph-income').textContent=Utils.formatCurrency(incomeReceived);
-document.getElementById('ph-expense').textContent=Utils.formatCurrency(expenseTotal);
-document.getElementById('ph-net').textContent=Utils.formatCurrency(incomeReceived - expensePaid);
+    const incomeReceived = income.filter(t=>t.status==='paid').reduce((s,t)=>s+Number(t.actual_amount||t.expected_amount||0),0);
+    // Despesas: total do mês (pago + pendente)
+    const expenseTotal = expense.reduce((s,t)=>s+Number(t.status==='paid'?(t.actual_amount||t.expected_amount):t.expected_amount||0),0);
+    // Já pago: só o que de fato saiu da conta
+    const expensePaid = expense.filter(t=>t.status==='paid').reduce((s,t)=>s+Number(t.actual_amount||t.expected_amount||0),0);
+    // Saldo = Recebido - Pago (sobra real depois dos pagamentos)
+    document.getElementById('ph-income').textContent=Utils.formatCurrency(incomeReceived);
+    document.getElementById('ph-expense').textContent=Utils.formatCurrency(expenseTotal);
+    document.getElementById('ph-net').textContent=Utils.formatCurrency(incomeReceived - expensePaid);
     renderList();
   }
 
@@ -481,7 +481,7 @@ document.getElementById('ph-net').textContent=Utils.formatCurrency(incomeReceive
       } else {
         const safeDesc=tx.description.replace(/'/g,"\\'");
         const safeDueDate = String(tx.due_date).split('T')[0];
-payBtn=`<button class="pay-btn" onclick="event.stopPropagation();openPayModal('${tx.transaction_id}','${tx.account_id||''}',${tx.expected_amount},'${tx.type}','${safeDesc}','${safeDueDate}')">${label}</button>`;
+        payBtn=`<button class="pay-btn" onclick="event.stopPropagation();openPayModal('${tx.transaction_id}','${tx.account_id||''}',${tx.expected_amount},'${tx.type}','${safeDesc}','${safeDueDate}')">${label}</button>`;
       }
     }
 
@@ -719,27 +719,65 @@ payBtn=`<button class="pay-btn" onclick="event.stopPropagation();openPayModal('$
   function openCardModal() {
     closeTypeSelector();
     document.getElementById('cm-date').value=new Date().toISOString().split('T')[0];
+    document.getElementById('cm-installments').value = '1';
+    document.getElementById('cm-preview').style.display = 'none';
+    document.getElementById('cm-desc').value = '';
+    document.getElementById('cm-amount').value = '';
     document.getElementById('cm-card').innerHTML='<option value="">Selecione o cartão</option>'+cards.map(c=>`<option value="${c.card_id}">${c.name}</option>`).join('');
     document.getElementById('cm-category').innerHTML='<option value="">Sem categoria</option>'+categories.filter(c=>c.type==='expense').map(c=>`<option value="${c.category_id}">${c.icon||''} ${c.name}${c.subcategory?' · '+c.subcategory:''}</option>`).join('');
     document.getElementById('card-modal').classList.add('open');
   }
   function closeCardModal() { document.getElementById('card-modal').classList.remove('open'); }
 
+  function calcInstallmentPreview() {
+    const total = parseCurrency(document.getElementById('cm-amount').value);
+    const installments = parseInt(document.getElementById('cm-installments').value) || 1;
+    const preview = document.getElementById('cm-preview');
+    if (total > 0 && installments > 1) {
+      const each = total / installments;
+      document.getElementById('cm-preview-val').textContent = Utils.formatCurrency(each);
+      document.getElementById('cm-preview-desc').textContent = `${installments}x de ${Utils.formatCurrency(each)} = ${Utils.formatCurrency(total)}`;
+      preview.style.display = 'block';
+    } else {
+      preview.style.display = 'none';
+    }
+  }
+
   async function saveCardPurchase() {
     const desc=document.getElementById('cm-desc').value.trim();
     const amount=parseCurrency(document.getElementById('cm-amount').value);
     const date=document.getElementById('cm-date').value;
     const cardId=document.getElementById('cm-card').value;
+    const installments=parseInt(document.getElementById('cm-installments').value)||1;
     if (!desc||!amount||!date||!cardId) { Utils.toast('Preencha todos os campos obrigatórios','error'); return; }
     const btn=document.getElementById('cm-save-btn'); btn.disabled=true; btn.textContent='Salvando...';
-    const res=await API.createTransaction({type:'expense',description:desc,expected_amount:amount,due_date:date,card_id:cardId,category_id:document.getElementById('cm-category').value});
-    if (res.success) {
-      // Marca como paga automaticamente — você já comprou, o limite já foi usado
-      await API.markPaid({transaction_id:res.data.transaction_id,paid_date:date,actual_amount:amount});
+    
+    let res;
+    if (installments > 1) {
+      // Compra parcelada
+      res = await API.call('invoices.createInstallment', {
+        card_id: cardId,
+        description: desc,
+        total_amount: amount,
+        installments: installments,
+        first_date: date,
+        category_id: document.getElementById('cm-category').value
+      });
+    } else {
+      // Compra à vista
+      res = await API.createTransaction({type:'expense',description:desc,expected_amount:amount,due_date:date,card_id:cardId,category_id:document.getElementById('cm-category').value});
+      if (res.success) {
+        await API.markPaid({transaction_id:res.data.transaction_id,paid_date:date,actual_amount:amount});
+      }
     }
+    
     btn.disabled=false; btn.textContent='Registrar Compra';
-    if (res.success) { Utils.toast('✅ Compra registrada!'); closeCardModal(); ['cm-desc','cm-amount'].forEach(id=>document.getElementById(id).value=''); load(); }
-    else Utils.toast(res.error||'Erro','error');
+    if (res.success) { 
+      const msg = installments > 1 ? `✅ ${installments} parcelas criadas!` : '✅ Compra registrada!';
+      Utils.toast(msg); 
+      closeCardModal(); 
+      load(); 
+    } else Utils.toast(res.error||'Erro','error');
   }
 
   function openTransferModal() {
