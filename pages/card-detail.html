@@ -82,6 +82,8 @@
         <span>Fecha: <strong id="closing-date">--</strong></span>
         <span>Vence: <strong id="due-date">--</strong></span>
       </div>
+      <button id="pay-invoice-btn" onclick="openPayModal()" style="display:none;width:100%;margin-top:14px;padding:12px;border:none;border-radius:12px;background:#fff;color:#111;font-family:inherit;font-size:14px;font-weight:800;cursor:pointer;">Pagar fatura</button>
+      <div id="paid-badge" style="display:none;margin-top:14px;text-align:center;font-size:12px;font-weight:700;background:rgba(255,255,255,0.18);padding:10px;border-radius:12px;"></div>
     </div>
   </div>
 
@@ -105,6 +107,22 @@
     <div class="modal-header"><span class="modal-title">Ações do cartão</span><button class="modal-close" onclick="closeActionsMenu()">✕</button></div>
     <button class="action-sheet-btn" onclick="closeActionsMenu();openEditModal()">✏️ Editar cartão</button>
     <button class="action-sheet-btn" onclick="closeActionsMenu();openDeleteModal()" style="color:var(--red);">🗑 Excluir cartão</button>
+  </div>
+</div>
+
+<!-- Modal pagar fatura -->
+<div class="modal-overlay" id="pay-modal" onclick="if(event.target===this)closePayModal()">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header"><span class="modal-title">Pagar fatura</span><button class="modal-close" onclick="closePayModal()">✕</button></div>
+    <div style="text-align:center;margin-bottom:6px;">
+      <div style="font-size:11px;color:var(--text-3);" id="pay-card-label"></div>
+      <div style="font-size:30px;font-weight:800;color:var(--text);margin-top:4px;" id="pay-total">R$ 0,00</div>
+    </div>
+    <label class="field-label" style="display:block;margin:14px 0 8px;">Pagar com qual conta?</label>
+    <div id="pay-accounts"></div>
+    <div class="field" style="margin-top:10px;"><label class="field-label">Data do pagamento</label><input type="date" id="pay-date"></div>
+    <button class="btn btn-primary" id="pay-confirm-btn" onclick="confirmPay()" style="margin-top:8px;">Confirmar pagamento</button>
   </div>
 </div>
 
@@ -164,8 +182,9 @@
   const cardId = params.get('id');
   if (!cardId) window.location.href = 'cards.html';
 
-  let card = null, allTransactions = [], invoiceTx = [], categories = [], allInvoices = [];
+  let card = null, allTransactions = [], invoiceTx = [], categories = [], allInvoices = [], accounts = [];
   let selectedEditColor = '#6D28D9';
+  let selectedPayAccount = null;
   let activeTab = 'purchases';
   let currentInvoiceIndex = 0; // qual fatura está sendo exibida
   let sortedInvoices = []; // todas as faturas ordenadas
@@ -197,11 +216,12 @@
   }
 
   async function load() {
-    const [cardsRes, txRes, invRes, catRes] = await Promise.all([
+    const [cardsRes, txRes, invRes, catRes, accRes] = await Promise.all([
       API.listCards(),
       API.listTransactions({all:true}),
       API.call('invoices.list', {card_id: cardId}),
-      API.listCategories()
+      API.listCategories(),
+      API.call('accounts.list', {})
     ]);
 
     const cards = cardsRes.success ? cardsRes.data : [];
@@ -211,6 +231,7 @@
     allTransactions = txRes.success ? txRes.data.filter(t => t.card_id === cardId) : [];
     allInvoices = invRes.success ? invRes.data : [];
     categories = catRes.success ? catRes.data : [];
+    accounts = accRes.success ? accRes.data : [];
 
     // Ordena faturas por mês de referência (do mais antigo pro mais futuro)
     sortedInvoices = [...allInvoices]
@@ -279,6 +300,22 @@
     document.getElementById('prev-invoice-btn').style.cursor = currentInvoiceIndex <= 0 ? 'not-allowed' : 'pointer';
     document.getElementById('next-invoice-btn').style.opacity = currentInvoiceIndex >= sortedInvoices.length - 1 ? '0.3' : '1';
     document.getElementById('next-invoice-btn').style.cursor = currentInvoiceIndex >= sortedInvoices.length - 1 ? 'not-allowed' : 'pointer';
+
+    // Botão de pagar / badge de paga
+    const payBtn = document.getElementById('pay-invoice-btn');
+    const paidBadge = document.getElementById('paid-badge');
+    if (inv && inv.status === 'paid') {
+      payBtn.style.display = 'none';
+      const pd = inv.paid_date ? new Date(String(inv.paid_date).split('T')[0] + 'T12:00:00').toLocaleDateString('pt-BR') : '';
+      paidBadge.style.display = 'block';
+      paidBadge.textContent = '✅ Fatura paga' + (pd ? ' em ' + pd : '');
+    } else if (inv && used > 0) {
+      payBtn.style.display = 'block';
+      paidBadge.style.display = 'none';
+    } else {
+      payBtn.style.display = 'none';
+      paidBadge.style.display = 'none';
+    }
   }
 
   function changeInvoice(direction) {
@@ -490,6 +527,56 @@
   // ===== Ações do cartão (folha de ação) =====
   function openActionsMenu() { document.getElementById('actions-modal').classList.add('open'); }
   function closeActionsMenu() { document.getElementById('actions-modal').classList.remove('open'); }
+
+  // ===== Pagamento de fatura =====
+  function openPayModal() {
+    const inv = sortedInvoices[currentInvoiceIndex];
+    if (!inv || inv.status === 'paid') return;
+    const total = Number(inv.total_amount) || 0;
+    document.getElementById('pay-card-label').textContent = `${card.name} · fatura de ${Utils.formatMonth(String(inv.reference_month).slice(0,7))}`;
+    document.getElementById('pay-total').textContent = Utils.formatCurrency(total);
+    document.getElementById('pay-date').value = new Date().toISOString().split('T')[0];
+    selectedPayAccount = accounts[0]?.account_id || null;
+    renderPayAccounts();
+    document.getElementById('pay-modal').classList.add('open');
+  }
+
+  function renderPayAccounts() {
+    const el = document.getElementById('pay-accounts');
+    if (accounts.length === 0) {
+      el.innerHTML = `<div style="font-size:12px;color:var(--text-3);padding:8px;">Nenhuma conta cadastrada. Crie uma conta primeiro.</div>`;
+      return;
+    }
+    el.innerHTML = accounts.map(a => `
+      <div onclick="selectPayAccount('${a.account_id}')" style="display:flex;align-items:center;gap:10px;padding:12px;border-radius:12px;border:1.5px solid ${a.account_id===selectedPayAccount?'var(--accent-2)':'var(--border)'};margin-bottom:8px;cursor:pointer;">
+        <div style="width:10px;height:10px;border-radius:50%;background:${a.color||'#6366F1'};flex-shrink:0;"></div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:600;color:var(--text);">${a.name}</div>
+          <div style="font-size:11px;color:var(--text-3);">Saldo: ${Utils.formatCurrency(a.current_balance)}</div>
+        </div>
+        ${a.account_id===selectedPayAccount?'<span style="color:var(--accent-2);font-weight:800;">✓</span>':''}
+      </div>
+    `).join('');
+  }
+
+  function selectPayAccount(id) { selectedPayAccount = id; renderPayAccounts(); }
+  function closePayModal() { document.getElementById('pay-modal').classList.remove('open'); }
+
+  async function confirmPay() {
+    const inv = sortedInvoices[currentInvoiceIndex];
+    if (!inv) return;
+    if (!selectedPayAccount) { Utils.toast('Selecione uma conta','error'); return; }
+    const btn = document.getElementById('pay-confirm-btn');
+    btn.disabled = true; btn.textContent = 'Pagando...';
+    const res = await API.call('invoices.pay', {
+      invoice_id: inv.invoice_id,
+      account_id: selectedPayAccount,
+      payment_date: document.getElementById('pay-date').value
+    });
+    btn.disabled = false; btn.textContent = 'Confirmar pagamento';
+    if (res.success) { Utils.toast('✅ Fatura paga!'); closePayModal(); load(); }
+    else Utils.toast(res.error || 'Erro ao pagar fatura','error');
+  }
 
   function openEditModal() {
     selectedEditColor = card.color || '#6D28D9';
