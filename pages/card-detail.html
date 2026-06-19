@@ -85,19 +85,25 @@
     <div class="card-info" id="card-info"></div>
 
     <div class="invoice-box">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+    <button onclick="changeInvoice(-1)" id="prev-invoice-btn" style="background:rgba(255,255,255,0.2);border:none;color:#fff;width:30px;height:30px;border-radius:8px;font-size:14px;cursor:pointer;">‹</button>
+    <div style="text-align:center;">
       <div class="invoice-lbl" id="invoice-status">Fatura atual</div>
-      <div class="invoice-val-big" id="invoice-total">R$ 0,00</div>
-      <div class="invoice-row">
-        <span>Limite disponível: <strong id="limit-available">R$ 0</strong></span>
-        <span id="limit-pct">0%</span>
-      </div>
-      <div class="invoice-bar"><div class="invoice-bar-fill" id="invoice-bar-fill" style="width:0%;"></div></div>
-      <div class="invoice-row">
-        <span>Fecha: <strong id="closing-date">--</strong></span>
-        <span>Vence: <strong id="due-date">--</strong></span>
-      </div>
+      <div style="font-size:13px;font-weight:700;color:#fff;margin-top:2px;" id="invoice-month-label">Carregando...</div>
     </div>
+    <button onclick="changeInvoice(1)" id="next-invoice-btn" style="background:rgba(255,255,255,0.2);border:none;color:#fff;width:30px;height:30px;border-radius:8px;font-size:14px;cursor:pointer;">›</button>
   </div>
+  <div class="invoice-val-big" id="invoice-total">R$ 0,00</div>
+  <div class="invoice-row">
+    <span>Limite disponível: <strong id="limit-available">R$ 0</strong></span>
+    <span id="limit-pct">0%</span>
+  </div>
+  <div class="invoice-bar"><div class="invoice-bar-fill" id="invoice-bar-fill" style="width:0%;"></div></div>
+  <div class="invoice-row">
+    <span>Fecha: <strong id="closing-date">--</strong></span>
+    <span>Vence: <strong id="due-date">--</strong></span>
+  </div>
+</div>
 
   <div class="action-cards-row">
     <button class="action-card-btn" onclick="openEditModal()">
@@ -179,9 +185,11 @@
   const cardId = params.get('id');
   if (!cardId) window.location.href = 'cards.html';
 
-  let card = null, allTransactions = [], invoiceTx = [], categories = [], allInvoices = [];
-  let selectedEditColor = '#6D28D9';
-  let activeTab = 'purchases';
+ let card = null, allTransactions = [], invoiceTx = [], categories = [], allInvoices = [];
+let selectedEditColor = '#6D28D9';
+let activeTab = 'purchases';
+let currentInvoiceIndex = 0; // qual fatura está sendo exibida
+let sortedInvoices = []; // todas as faturas ordenadas
 
   function currencyInput(el) { el.value = el.value.replace(/[^\d.,]/g,''); }
   function currencyBlur(el) {
@@ -210,65 +218,97 @@
   }
 
   async function load() {
-    const [cardsRes, txRes, invRes, catRes] = await Promise.all([
-      API.listCards(),
-      API.listTransactions({all:true}),
-      API.call('invoices.list', {card_id: cardId}),
-      API.listCategories()
-    ]);
+  const [cardsRes, txRes, invRes, catRes] = await Promise.all([
+    API.listCards(),
+    API.listTransactions({all:true}),
+    API.call('invoices.list', {card_id: cardId}),
+    API.listCategories()
+  ]);
 
-    const cards = cardsRes.success ? cardsRes.data : [];
-    card = cards.find(c => c.card_id === cardId);
-    console.log('CARD:', card);
-console.log('CURRENT INVOICE:', card.current_invoice);
-console.log('ALL INVOICES:', allInvoices);
-    if (!card) { Utils.toast('Cartão não encontrado','error'); setTimeout(()=>window.location.href='cards.html',1500); return; }
+  const cards = cardsRes.success ? cardsRes.data : [];
+  card = cards.find(c => c.card_id === cardId);
+  if (!card) { Utils.toast('Cartão não encontrado','error'); setTimeout(()=>window.location.href='cards.html',1500); return; }
 
-    allTransactions = txRes.success ? txRes.data.filter(t => t.card_id === cardId) : [];
-    allInvoices = invRes.success ? invRes.data : [];
-    categories = catRes.success ? catRes.data : [];
+  allTransactions = txRes.success ? txRes.data.filter(t => t.card_id === cardId) : [];
+  allInvoices = invRes.success ? invRes.data : [];
+  categories = catRes.success ? catRes.data : [];
 
-    const inv = card.current_invoice;
-    invoiceTx = inv ? allTransactions.filter(t => t.invoice_id === inv.invoice_id) : [];
+  // Ordena faturas por mês de referência (mais recente primeiro? Não, vamos do mais antigo pro mais futuro)
+  sortedInvoices = [...allInvoices]
+    .filter(i => Number(i.total_amount) > 0 || i.status === 'paid')
+    .sort((a, b) => String(a.reference_month).localeCompare(String(b.reference_month)));
 
-    renderHero();
-    renderTab();
-  }
+  // Encontra o índice da fatura atual (próxima a vencer com saldo)
+  const today = new Date().toISOString().split('T')[0];
+  let defaultIndex = sortedInvoices.findIndex(i => i.status !== 'paid' && String(i.due_date) >= today);
+  if (defaultIndex === -1) defaultIndex = sortedInvoices.length - 1;
+  if (defaultIndex < 0) defaultIndex = 0;
+  currentInvoiceIndex = defaultIndex;
+
+  renderHero();
+  renderTab();
+}
 
   function renderHero() {
-    const bgColor = card.color || '#6D28D9';
-    document.getElementById('card-hero').style.background = `linear-gradient(135deg, ${bgColor}, ${shadeColor(bgColor,-25)})`;
-    document.getElementById('card-name').textContent = card.name;
-    document.getElementById('card-info').textContent = `Fecha dia ${card.closing_day} · Vence dia ${card.due_day}`;
+  const bgColor = card.color || '#6D28D9';
+  document.getElementById('card-hero').style.background = `linear-gradient(135deg, ${bgColor}, ${shadeColor(bgColor,-25)})`;
+  document.getElementById('card-name').textContent = card.name;
+  document.getElementById('card-info').textContent = `Fecha dia ${card.closing_day} · Vence dia ${card.due_day}`;
 
-    const limit = Number(card.limit_amount)||0;
-    const inv = card.current_invoice;
-    const used = Number(inv?.total_amount)||0;
-    const available = Math.max(0, limit - used);
-    const pct = limit>0 ? Math.min(100, Math.round((used/limit)*100)) : 0;
+  const limit = Number(card.limit_amount)||0;
+  const inv = sortedInvoices[currentInvoiceIndex] || null;
+  const used = Number(inv?.total_amount)||0;
+  const available = Math.max(0, limit - used);
+  const pct = limit>0 ? Math.min(100, Math.round((used/limit)*100)) : 0;
 
-    document.getElementById('invoice-total').textContent = Utils.formatCurrency(used);
-    document.getElementById('limit-available').textContent = Utils.formatCurrency(available);
-    document.getElementById('limit-pct').textContent = pct + '% usado';
-    document.getElementById('invoice-bar-fill').style.width = pct + '%';
+  // Atualiza tx da fatura atual
+  invoiceTx = inv ? allTransactions.filter(t => t.invoice_id === inv.invoice_id) : [];
 
-    const statusLabel = inv ? (inv.status==='paid' ? '✅ Fatura paga' : inv.status==='closed' ? '🔒 Fatura fechada' : '🔓 Fatura aberta') : '🔓 Fatura aberta';
-    document.getElementById('invoice-status').textContent = statusLabel;
+  document.getElementById('invoice-total').textContent = Utils.formatCurrency(used);
+  document.getElementById('limit-available').textContent = Utils.formatCurrency(available);
+  document.getElementById('limit-pct').textContent = pct + '% usado';
+  document.getElementById('invoice-bar-fill').style.width = pct + '%';
 
-    if (inv && inv.due_date) {
-      const dueDate = new Date(String(inv.due_date).split('T')[0] + 'T12:00:00');
-      document.getElementById('due-date').textContent = dueDate.toLocaleDateString('pt-BR', {day:'2-digit', month:'short'});
-      const closeDate = new Date(dueDate);
-      if (Number(card.closing_day) >= Number(card.due_day)) {
-        closeDate.setMonth(closeDate.getMonth() - 1);
-      }
-      closeDate.setDate(Number(card.closing_day));
-      document.getElementById('closing-date').textContent = closeDate.toLocaleDateString('pt-BR', {day:'2-digit', month:'short'});
-    } else {
-      document.getElementById('closing-date').textContent = '--';
-      document.getElementById('due-date').textContent = '--';
-    }
+  const statusLabel = inv ? (inv.status==='paid' ? '✅ Fatura paga' : inv.status==='closed' ? '🔒 Fatura fechada' : '🔓 Fatura aberta') : '🔓 Sem fatura';
+  document.getElementById('invoice-status').textContent = statusLabel;
+
+  // Mês de referência
+  if (inv) {
+    const refMonth = String(inv.reference_month).slice(0, 7);
+    document.getElementById('invoice-month-label').textContent = Utils.formatMonth(refMonth);
+  } else {
+    document.getElementById('invoice-month-label').textContent = '--';
   }
+
+  // Datas
+  if (inv && inv.due_date) {
+    const dueDate = new Date(String(inv.due_date).split('T')[0] + 'T12:00:00');
+    document.getElementById('due-date').textContent = dueDate.toLocaleDateString('pt-BR', {day:'2-digit', month:'short'});
+    const closeDate = new Date(dueDate);
+    if (Number(card.closing_day) >= Number(card.due_day)) {
+      closeDate.setMonth(closeDate.getMonth() - 1);
+    }
+    closeDate.setDate(Number(card.closing_day));
+    document.getElementById('closing-date').textContent = closeDate.toLocaleDateString('pt-BR', {day:'2-digit', month:'short'});
+  } else {
+    document.getElementById('closing-date').textContent = '--';
+    document.getElementById('due-date').textContent = '--';
+  }
+
+  // Desabilita botões nos extremos
+  document.getElementById('prev-invoice-btn').style.opacity = currentInvoiceIndex <= 0 ? '0.3' : '1';
+  document.getElementById('prev-invoice-btn').style.cursor = currentInvoiceIndex <= 0 ? 'not-allowed' : 'pointer';
+  document.getElementById('next-invoice-btn').style.opacity = currentInvoiceIndex >= sortedInvoices.length - 1 ? '0.3' : '1';
+  document.getElementById('next-invoice-btn').style.cursor = currentInvoiceIndex >= sortedInvoices.length - 1 ? 'not-allowed' : 'pointer';
+}
+
+  function changeInvoice(direction) {
+  const newIndex = currentInvoiceIndex + direction;
+  if (newIndex < 0 || newIndex >= sortedInvoices.length) return;
+  currentInvoiceIndex = newIndex;
+  renderHero();
+  renderTab();
+}
 
   function setTab(tab, el) {
     activeTab = tab;
