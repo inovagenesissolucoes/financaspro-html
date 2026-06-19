@@ -219,6 +219,9 @@
 
     const cards = cardsRes.success ? cardsRes.data : [];
     card = cards.find(c => c.card_id === cardId);
+    console.log('CARD:', card);
+console.log('CURRENT INVOICE:', card.current_invoice);
+console.log('ALL INVOICES:', allInvoices);
     if (!card) { Utils.toast('Cartão não encontrado','error'); setTimeout(()=>window.location.href='cards.html',1500); return; }
 
     allTransactions = txRes.success ? txRes.data.filter(t => t.card_id === cardId) : [];
