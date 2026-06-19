@@ -361,11 +361,16 @@
 
     const income = allTx.filter(t=>t.type==='income'&&t.status!=='cancelled');
     const expense = allTx.filter(t=>t.type==='expense'&&t.status!=='cancelled');
-    const incomeReceived = income.filter(t=>t.status==='paid').reduce((s,t)=>s+Number(t.actual_amount||t.expected_amount||0),0);
-    const expenseTotal = expense.reduce((s,t)=>s+Number(t.status==='paid'?(t.actual_amount||t.expected_amount):t.expected_amount||0),0);
-    document.getElementById('ph-income').textContent=Utils.formatCurrency(incomeReceived);
-    document.getElementById('ph-expense').textContent=Utils.formatCurrency(expenseTotal);
-    document.getElementById('ph-net').textContent=Utils.formatCurrency(incomeReceived - expenseTotal);
+    // Receitas: só o que recebi de fato
+const incomeReceived = income.filter(t=>t.status==='paid').reduce((s,t)=>s+Number(t.actual_amount||t.expected_amount||0),0);
+// Despesas: total do mês (pago + pendente)
+const expenseTotal = expense.reduce((s,t)=>s+Number(t.status==='paid'?(t.actual_amount||t.expected_amount):t.expected_amount||0),0);
+// Já pago: só o que de fato saiu da conta
+const expensePaid = expense.filter(t=>t.status==='paid').reduce((s,t)=>s+Number(t.actual_amount||t.expected_amount||0),0);
+// Saldo = Recebido - Pago (sobra real depois dos pagamentos)
+document.getElementById('ph-income').textContent=Utils.formatCurrency(incomeReceived);
+document.getElementById('ph-expense').textContent=Utils.formatCurrency(expenseTotal);
+document.getElementById('ph-net').textContent=Utils.formatCurrency(incomeReceived - expensePaid);
     renderList();
   }
 
