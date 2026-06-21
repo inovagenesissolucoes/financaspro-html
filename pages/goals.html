@@ -62,7 +62,7 @@
     <div class="modal-header"><span class="modal-title" id="goal-modal-title">Nova Meta</span><button class="modal-close" onclick="closeModal()">✕</button></div>
     <input type="hidden" id="g-id">
     <div class="field"><label class="field-label">Nome da meta *</label><input type="text" id="g-name" placeholder="Ex: Viagem, Reserva emergência..."></div>
-    <div class="field"><label class="field-label">Valor alvo (R$) *</label><input type="number" id="g-target" placeholder="10000" step="0.01" min="0"></div>
+    <div class="field"><label class="field-label">Valor alvo (R$)</label><input type="number" id="g-target" placeholder="Deixe vazio p/ cofre sem meta" step="0.01" min="0"></div>
     <div class="field"><label class="field-label">Contribuição mensal (R$)</label><input type="number" id="g-monthly" placeholder="500" step="0.01" min="0"></div>
     <div class="field"><label class="field-label">Data alvo</label><input type="date" id="g-date"></div>
     <button class="btn btn-primary" id="save-btn" onclick="saveGoal()">Criar Meta</button>
@@ -156,8 +156,9 @@
     if (goals.length > 1) {
       const totalSaved  = goals.reduce((s,g)=>s+Number(g.current_amount||0), 0);
       const totalTarget = goals.reduce((s,g)=>s+Number(g.target_amount||0), 0);
-      const remaining   = Math.max(0, totalTarget - totalSaved);
-      const pctGeral    = totalTarget>0 ? Math.min(100, Math.round((totalSaved/totalTarget)*100)) : 0;
+      const savedToward = goals.reduce((s,g)=> (Number(g.target_amount||0)>0 ? s+Number(g.current_amount||0) : s), 0);
+      const remaining   = Math.max(0, totalTarget - savedToward);
+      const pctGeral    = totalTarget>0 ? Math.min(100, Math.round((savedToward/totalTarget)*100)) : 0;
       const withDate = active.filter(g=>g.target_date).sort((a,b)=>String(a.target_date).localeCompare(String(b.target_date)));
       const next = withDate[0] || null;
       sumEl.innerHTML = `
@@ -193,11 +194,32 @@
 
     let html = active.map((g,i) => {
       const curr    = Number(g.current_amount)||0;
-      const target  = Number(g.target_amount)||1;
+      const target  = Number(g.target_amount)||0;
+      const hasTarget = target > 0;
       const monthly = Number(g.monthly_contribution)||0;
-      const pct     = Math.min(100, Math.round((curr/target)*100));
+      const pct     = hasTarget ? Math.min(100, Math.round((curr/target)*100)) : 0;
       const remaining = Math.max(0, target - curr);
-      const months    = monthly > 0 ? Math.ceil(remaining/monthly) : null;
+      const months    = (hasTarget && monthly > 0) ? Math.ceil(remaining/monthly) : null;
+
+      if (!hasTarget) {
+        return `
+        <div class="gcard" style="cursor:pointer;" onclick="openDetail('${g.goal_id}')">
+          <div class="gcard-top">
+            <span class="gcard-name">${g.name}</span>
+            <span class="gcard-pct" style="background:var(--green-bg);color:var(--green);">🐷 Cofre</span>
+          </div>
+          ${g.target_date ? `<p style="font-size:10px;color:var(--text-3);margin-bottom:8px;">📅 ${Utils.formatDate(g.target_date)}</p>` : ''}
+          <div class="gcard-amounts" style="margin-top:4px;">
+            <span class="gcard-curr">${Utils.formatCurrency(curr)}</span>
+            <span class="gcard-target">guardado</span>
+          </div>
+          <div class="gcard-footer" style="margin-top:10px;">
+            <span class="gcard-info">Sem meta definida</span>
+            <button class="gcard-btn" onclick="event.stopPropagation();openAddModal('${g.goal_id}')">+ Guardar</button>
+          </div>
+        </div>`;
+      }
+
       return `
         <div class="gcard" style="cursor:pointer;" onclick="openDetail('${g.goal_id}')">
           <div class="gcard-top">
@@ -246,27 +268,36 @@
   function renderDetail(goalId) {
     const g = goals.find(x => x.goal_id === goalId);
     if (!g) { closeDetail(); return; }
-    const curr = Number(g.current_amount)||0, target = Number(g.target_amount)||1;
-    const pct = Math.min(100, Math.round((curr/target)*100));
+    const curr = Number(g.current_amount)||0, target = Number(g.target_amount)||0;
+    const hasTarget = target > 0;
+    const pct = hasTarget ? Math.min(100, Math.round((curr/target)*100)) : 0;
     const remaining = Math.max(0, target - curr);
     const monthly = Number(g.monthly_contribution)||0;
-    const months = monthly>0 ? Math.ceil(remaining/monthly) : null;
+    const months = (hasTarget && monthly>0) ? Math.ceil(remaining/monthly) : null;
     const contribs = allContributions
       .filter(c => String(c.notes) === 'Aporte meta ' + goalId)
       .sort((a,b)=> new Date(b.paid_date) - new Date(a.paid_date));
 
+    const headBlock = hasTarget
+      ? `<div style="text-align:center;margin-bottom:14px;">
+           <div style="font-size:30px;font-weight:800;color:var(--text);">${Utils.formatCurrency(curr)}</div>
+           <div style="font-size:12px;color:var(--text-3);">de ${Utils.formatCurrency(target)} · ${pct}%</div>
+           <div class="gcard-prog" style="margin-top:10px;"><div class="gcard-fill" style="width:${pct}%;background:${gradFor(0)};"></div></div>
+         </div>
+         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
+           <div class="gd-stat"><div class="gd-stat-lbl">Falta guardar</div><div class="gd-stat-val">${Utils.formatCurrency(remaining)}</div></div>
+           <div class="gd-stat"><div class="gd-stat-lbl">${months?'Previsão':'Aporte mensal'}</div><div class="gd-stat-val">${months?('~'+months+' '+(months>1?'meses':'mês')):(monthly>0?Utils.formatCurrency(monthly):'—')}</div></div>
+         </div>`
+      : `<div style="text-align:center;margin-bottom:14px;">
+           <div style="font-size:11px;color:var(--green);font-weight:700;margin-bottom:2px;">🐷 COFRE · SEM META</div>
+           <div style="font-size:30px;font-weight:800;color:var(--text);">${Utils.formatCurrency(curr)}</div>
+           <div style="font-size:12px;color:var(--text-3);">guardado até agora</div>
+         </div>`;
+
     document.getElementById('gd-name').textContent = g.name;
     document.getElementById('gd-body').innerHTML = `
-      <div style="text-align:center;margin-bottom:14px;">
-        <div style="font-size:30px;font-weight:800;color:var(--text);">${Utils.formatCurrency(curr)}</div>
-        <div style="font-size:12px;color:var(--text-3);">de ${Utils.formatCurrency(target)} · ${pct}%</div>
-        <div class="gcard-prog" style="margin-top:10px;"><div class="gcard-fill" style="width:${pct}%;background:${gradFor(0)};"></div></div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
-        <div class="gd-stat"><div class="gd-stat-lbl">Falta guardar</div><div class="gd-stat-val">${Utils.formatCurrency(remaining)}</div></div>
-        <div class="gd-stat"><div class="gd-stat-lbl">${months?'Previsão':'Aporte mensal'}</div><div class="gd-stat-val">${months?('~'+months+' '+(months>1?'meses':'mês')):(monthly>0?Utils.formatCurrency(monthly):'—')}</div></div>
-      </div>
-      ${g.target_date?`<p style="font-size:11px;color:var(--text-3);margin-bottom:14px;">📅 Data alvo: ${Utils.formatDate(g.target_date)}</p>`:''}
+      ${headBlock}
+      ${g.target_date?`<p style="font-size:11px;color:var(--text-3);margin-bottom:14px;">📅 ${hasTarget?'Data alvo: ':''}${Utils.formatDate(g.target_date)}</p>`:''}
       <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px;">Histórico de aportes ${contribs.length?`(${contribs.length})`:''}</div>
       ${contribs.length===0
         ? `<p style="font-size:12px;color:var(--text-3);padding-bottom:8px;">Nenhum aporte ainda. Toque em "Guardar dinheiro" para começar.</p>`
@@ -305,8 +336,8 @@
 
   async function saveGoal() {
     const name   = document.getElementById('g-name').value.trim();
-    const target = parseFloat(document.getElementById('g-target').value);
-    if (!name || !target) { Utils.toast('Preencha nome e valor alvo','error'); return; }
+    const target = parseFloat(document.getElementById('g-target').value) || 0;
+    if (!name) { Utils.toast('Digite o nome','error'); return; }
     const id = document.getElementById('g-id').value;
     const btn = document.getElementById('save-btn'); const label = btn.textContent;
     btn.disabled=true; btn.textContent='Salvando...';
