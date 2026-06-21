@@ -79,10 +79,6 @@
         <span id="limit-pct">0%</span>
       </div>
       <div class="invoice-bar"><div class="invoice-bar-fill" id="invoice-bar-fill" style="width:0%;"></div></div>
-      <div class="invoice-row">
-        <span>Fecha: <strong id="closing-date">--</strong></span>
-        <span>Vence: <strong id="due-date">--</strong></span>
-      </div>
       <button id="pay-invoice-btn" onclick="openPayModal()" style="display:none;width:100%;margin-top:14px;padding:12px;border:none;border-radius:12px;background:#fff;color:#111;font-family:inherit;font-size:14px;font-weight:800;cursor:pointer;">Pagar fatura</button>
       <div id="paid-badge" style="display:none;margin-top:14px;text-align:center;font-size:12px;font-weight:700;background:rgba(255,255,255,0.18);padding:10px;border-radius:12px;"></div>
     </div>
@@ -311,21 +307,6 @@
       document.getElementById('invoice-month-label').textContent = Utils.formatMonth(refMonth);
     } else {
       document.getElementById('invoice-month-label').textContent = '--';
-    }
-
-    // Datas
-    if (inv && inv.due_date) {
-      const dueDate = new Date(String(inv.due_date).split('T')[0] + 'T12:00:00');
-      document.getElementById('due-date').textContent = dueDate.toLocaleDateString('pt-BR', {day:'2-digit', month:'short'});
-      const closeDate = new Date(dueDate);
-      if (Number(card.closing_day) >= Number(card.due_day)) {
-        closeDate.setMonth(closeDate.getMonth() - 1);
-      }
-      closeDate.setDate(Number(card.closing_day));
-      document.getElementById('closing-date').textContent = closeDate.toLocaleDateString('pt-BR', {day:'2-digit', month:'short'});
-    } else {
-      document.getElementById('closing-date').textContent = '--';
-      document.getElementById('due-date').textContent = '--';
     }
 
     // Desabilita botões nos extremos
