@@ -411,7 +411,12 @@
     const rel = relDays(n);
     // PREVISTA (recorrente) → azul
     if (isRecurring(tx)) {
-      const tail = n < 0 ? 'venceu ' + rel : n === 0 ? 'vence hoje' : 'vence ' + rel;
+      let tail;
+      if (tx.type === 'income') {
+        tail = rel; // receita não "vence": "em 9 dias" / "hoje" / "há X dias"
+      } else {
+        tail = n < 0 ? 'venceu ' + rel : n === 0 ? 'vence hoje' : 'vence ' + rel;
+      }
       return `<span class="badge" style="background:#E0E7FF;color:#4338CA;">🔄 Previsto · ${tail}</span>`;
     }
     // RECEITA avulsa a receber → azul
@@ -482,7 +487,7 @@
           <div class="tx-cat">${purchaseCount} compra${purchaseCount!==1?'s':''} · ${dueTxt}</div>
           <div><span class="badge" style="background:${badgeColor}22;color:${badgeColor};">${statusLabel}</span></div>
         </div>
-        <div class="tx-right">
+        <div class="tx-right" style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
           <div class="tx-amt tx-neg">-${Utils.formatCurrency(tx.expected_amount)}</div>
           ${inv.status !== 'paid' ? `<button class="pay-btn" onclick="event.stopPropagation();window.location.href='card-detail.html?id=${card?.card_id}'">Pagar</button>` : ''}
         </div>
@@ -533,7 +538,7 @@
         <div class="tx-cat">${sub}</div>
         <div>${badge}${pastTag}</div>
       </div>
-      <div class="tx-right">${amtHtml}${payBtn}</div>
+      <div class="tx-right" style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">${amtHtml}${payBtn}</div>
     </div>`;
   }
 
