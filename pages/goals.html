@@ -13,6 +13,12 @@
     .apt-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:0.5px solid var(--border);}
     .apt-row:last-child{border-bottom:none;}
     .apt-ico{width:34px;height:34px;border-radius:10px;background:#16A34A22;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+    .summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:16px 14px 4px;}
+    .summary-mini{background:var(--bg-card);border:0.5px solid var(--border);border-radius:14px;padding:14px;}
+    .summary-mini-icon{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;margin-bottom:8px;}
+    .summary-mini-lbl{font-size:11px;color:var(--text-3);margin-bottom:2px;}
+    .summary-mini-val{font-size:16px;font-weight:800;color:var(--text);}
+    .summary-mini-sub{font-size:10px;color:var(--text-3);margin-top:2px;}
   </style>
 </head>
 <body>
@@ -29,6 +35,8 @@
       </div>
     </div>
   </div>
+
+  <div id="summary-container"></div>
 
   <div id="list-container" style="padding:14px;">
     <div class="skeleton"></div>
@@ -130,6 +138,7 @@
     allContributions = (txRes.success ? txRes.data : []).filter(t => String(t.notes||'').indexOf('Aporte meta ') === 0);
 
     if (goals.length === 0) {
+      document.getElementById('summary-container').innerHTML = '';
       document.getElementById('list-container').innerHTML = `
         <div class="empty-state">
           <div class="empty-icon">🎯</div>
@@ -141,6 +150,46 @@
 
     const active = goals.filter(g=>g.status!=='completed');
     const done   = goals.filter(g=>g.status==='completed');
+
+    // Resumo geral (só com mais de uma meta)
+    const sumEl = document.getElementById('summary-container');
+    if (goals.length > 1) {
+      const totalSaved  = goals.reduce((s,g)=>s+Number(g.current_amount||0), 0);
+      const totalTarget = goals.reduce((s,g)=>s+Number(g.target_amount||0), 0);
+      const remaining   = Math.max(0, totalTarget - totalSaved);
+      const pctGeral    = totalTarget>0 ? Math.min(100, Math.round((totalSaved/totalTarget)*100)) : 0;
+      const withDate = active.filter(g=>g.target_date).sort((a,b)=>String(a.target_date).localeCompare(String(b.target_date)));
+      const next = withDate[0] || null;
+      sumEl.innerHTML = `
+        <div class="summary-grid">
+          <div class="summary-mini">
+            <div class="summary-mini-icon" style="background:#DCFCE7;">💰</div>
+            <div class="summary-mini-lbl">Guardado</div>
+            <div class="summary-mini-val" style="color:var(--green);">${Utils.formatCurrency(totalSaved)}</div>
+            <div class="summary-mini-sub">${pctGeral}% do alvo total</div>
+          </div>
+          <div class="summary-mini">
+            <div class="summary-mini-icon" style="background:#FEE2E2;">🎯</div>
+            <div class="summary-mini-lbl">Falta</div>
+            <div class="summary-mini-val">${Utils.formatCurrency(remaining)}</div>
+            <div class="summary-mini-sub">de ${Utils.formatCurrency(totalTarget)}</div>
+          </div>
+          <div class="summary-mini">
+            <div class="summary-mini-icon" style="background:#DBEAFE;">📅</div>
+            <div class="summary-mini-lbl">Próxima meta</div>
+            <div class="summary-mini-val">${next ? Utils.formatDate(next.target_date) : '--'}</div>
+            <div class="summary-mini-sub">${next ? next.name : 'Sem data'}</div>
+          </div>
+          <div class="summary-mini">
+            <div class="summary-mini-icon" style="background:#F3E8FF;">📊</div>
+            <div class="summary-mini-lbl">Metas ativas</div>
+            <div class="summary-mini-val">${active.length}</div>
+            <div class="summary-mini-sub">${done.length} concluída${done.length!==1?'s':''}</div>
+          </div>
+        </div>`;
+    } else {
+      sumEl.innerHTML = '';
+    }
 
     let html = active.map((g,i) => {
       const curr    = Number(g.current_amount)||0;
