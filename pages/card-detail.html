@@ -73,6 +73,7 @@
         <button onclick="changeInvoice(1)" id="next-invoice-btn" style="background:rgba(255,255,255,0.2);border:none;color:#fff;width:30px;height:30px;border-radius:8px;font-size:14px;cursor:pointer;">›</button>
       </div>
       <div class="invoice-val-big" id="invoice-total">R$ 0,00</div>
+      <div class="invoice-row" id="invoice-paid-line" style="display:none;"></div>
       <div class="invoice-row">
         <span>Limite disponível: <strong id="limit-available">R$ 0</strong></span>
         <span id="limit-pct">0%</span>
@@ -118,8 +119,10 @@
     <div style="text-align:center;margin-bottom:6px;">
       <div style="font-size:11px;color:var(--text-3);" id="pay-card-label"></div>
       <div style="font-size:30px;font-weight:800;color:var(--text);margin-top:4px;" id="pay-total">R$ 0,00</div>
+      <div style="font-size:11px;color:var(--text-3);">restante a pagar</div>
     </div>
-    <label class="field-label" style="display:block;margin:14px 0 8px;">Pagar com qual conta?</label>
+    <div class="field"><label class="field-label">Valor a pagar</label><input type="text" id="pay-amount" inputmode="decimal" oninput="currencyInput(this)" onblur="currencyBlur(this)"></div>
+    <label class="field-label" style="display:block;margin:6px 0 8px;">Pagar com qual conta?</label>
     <div id="pay-accounts"></div>
     <div class="field" style="margin-top:10px;"><label class="field-label">Data do pagamento</label><input type="date" id="pay-date"></div>
     <button class="btn btn-primary" id="pay-confirm-btn" onclick="confirmPay()" style="margin-top:8px;">Confirmar pagamento</button>
@@ -257,19 +260,47 @@
 
     const limit = Number(card.limit_amount)||0;
     const inv = sortedInvoices[currentInvoiceIndex] || null;
-    const used = Number(inv?.total_amount)||0;
+    const total = Number(inv?.total_amount)||0;
+    const paid = Number(inv?.paid_amount)||0;
+    const remaining = Math.max(0, total - paid);
+    const used = remaining;                          // limite consumido = saldo devedor
     const available = Math.max(0, limit - used);
     const pct = limit>0 ? Math.min(100, Math.round((used/limit)*100)) : 0;
+
+    // Fatura já fechou? (passou o dia de fechamento do ciclo)
+    let isClosed = false;
+    if (inv && inv.due_date) {
+      const dd = new Date(String(inv.due_date).split('T')[0] + 'T12:00:00');
+      const cd = new Date(dd);
+      if (Number(card.closing_day) >= Number(card.due_day)) cd.setMonth(cd.getMonth() - 1);
+      cd.setDate(Number(card.closing_day));
+      cd.setHours(23,59,59,999);
+      isClosed = new Date() > cd;
+    }
 
     // Atualiza tx da fatura atual
     invoiceTx = inv ? allTransactions.filter(t => t.invoice_id === inv.invoice_id) : [];
 
-    document.getElementById('invoice-total').textContent = Utils.formatCurrency(used);
+    document.getElementById('invoice-total').textContent = Utils.formatCurrency(remaining);
     document.getElementById('limit-available').textContent = Utils.formatCurrency(available);
     document.getElementById('limit-pct').textContent = pct + '% usado';
     document.getElementById('invoice-bar-fill').style.width = pct + '%';
 
-    const statusLabel = inv ? (inv.status==='paid' ? '✅ Fatura paga' : inv.status==='closed' ? '🔒 Fatura fechada' : '🔓 Fatura aberta') : '🔓 Sem fatura';
+    // Linha "Fatura / Pago" só quando houve pagamento parcial
+    const paidLine = document.getElementById('invoice-paid-line');
+    if (paid > 0) {
+      paidLine.style.display = 'flex';
+      paidLine.innerHTML = `<span>Fatura: <strong>${Utils.formatCurrency(total)}</strong></span><span>Pago: <strong>${Utils.formatCurrency(paid)}</strong></span>`;
+    } else {
+      paidLine.style.display = 'none';
+    }
+
+    let statusLabel;
+    if (!inv) statusLabel = '🔓 Sem fatura';
+    else if (remaining <= 0 && isClosed) statusLabel = '✅ Fatura paga';
+    else if (remaining <= 0 && !isClosed) statusLabel = '✅ Quitada (adiantada)';
+    else if (remaining > 0 && isClosed) statusLabel = '🔒 Fatura fechada';
+    else statusLabel = '🔓 Fatura aberta';
     document.getElementById('invoice-status').textContent = statusLabel;
 
     // Mês de referência
@@ -301,17 +332,22 @@
     document.getElementById('next-invoice-btn').style.opacity = currentInvoiceIndex >= sortedInvoices.length - 1 ? '0.3' : '1';
     document.getElementById('next-invoice-btn').style.cursor = currentInvoiceIndex >= sortedInvoices.length - 1 ? 'not-allowed' : 'pointer';
 
-    // Botão de pagar / badge de paga
+    // Botão de pagar / badge
     const payBtn = document.getElementById('pay-invoice-btn');
     const paidBadge = document.getElementById('paid-badge');
-    if (inv && inv.status === 'paid') {
+    if (inv && remaining > 0) {
+      payBtn.style.display = 'block';
+      payBtn.textContent = 'Pagar fatura · ' + Utils.formatCurrency(remaining);
+      paidBadge.style.display = 'none';
+    } else if (inv && remaining <= 0 && isClosed) {
       payBtn.style.display = 'none';
       const pd = inv.paid_date ? new Date(String(inv.paid_date).split('T')[0] + 'T12:00:00').toLocaleDateString('pt-BR') : '';
       paidBadge.style.display = 'block';
       paidBadge.textContent = '✅ Fatura paga' + (pd ? ' em ' + pd : '');
-    } else if (inv && used > 0) {
-      payBtn.style.display = 'block';
-      paidBadge.style.display = 'none';
+    } else if (inv && remaining <= 0 && !isClosed) {
+      payBtn.style.display = 'none';
+      paidBadge.style.display = 'block';
+      paidBadge.textContent = '✅ Quitada — fatura ainda aberta';
     } else {
       payBtn.style.display = 'none';
       paidBadge.style.display = 'none';
@@ -531,10 +567,14 @@
   // ===== Pagamento de fatura =====
   function openPayModal() {
     const inv = sortedInvoices[currentInvoiceIndex];
-    if (!inv || inv.status === 'paid') return;
+    if (!inv) return;
     const total = Number(inv.total_amount) || 0;
+    const paid = Number(inv.paid_amount) || 0;
+    const remaining = Math.max(0, total - paid);
+    if (remaining <= 0) { Utils.toast('Fatura já está quitada'); return; }
     document.getElementById('pay-card-label').textContent = `${card.name} · fatura de ${Utils.formatMonth(String(inv.reference_month).slice(0,7))}`;
-    document.getElementById('pay-total').textContent = Utils.formatCurrency(total);
+    document.getElementById('pay-total').textContent = Utils.formatCurrency(remaining);
+    document.getElementById('pay-amount').value = remaining.toFixed(2).replace('.',',');
     document.getElementById('pay-date').value = new Date().toISOString().split('T')[0];
     selectedPayAccount = accounts[0]?.account_id || null;
     renderPayAccounts();
@@ -566,15 +606,18 @@
     const inv = sortedInvoices[currentInvoiceIndex];
     if (!inv) return;
     if (!selectedPayAccount) { Utils.toast('Selecione uma conta','error'); return; }
+    const amount = parseCurrency(document.getElementById('pay-amount').value);
+    if (!(amount > 0)) { Utils.toast('Informe um valor válido','error'); return; }
     const btn = document.getElementById('pay-confirm-btn');
     btn.disabled = true; btn.textContent = 'Pagando...';
     const res = await API.call('invoices.pay', {
       invoice_id: inv.invoice_id,
       account_id: selectedPayAccount,
+      amount: amount,
       payment_date: document.getElementById('pay-date').value
     });
     btn.disabled = false; btn.textContent = 'Confirmar pagamento';
-    if (res.success) { Utils.toast('✅ Fatura paga!'); closePayModal(); load(); }
+    if (res.success) { Utils.toast('✅ Pagamento registrado!'); closePayModal(); load(); }
     else Utils.toast(res.error || 'Erro ao pagar fatura','error');
   }
 
