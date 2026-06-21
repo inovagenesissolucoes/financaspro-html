@@ -319,13 +319,14 @@
     // Adiciona faturas do mês como "lançamentos virtuais"
     const invoices = invRes.success ? invRes.data : [];
     invoices.forEach(inv => {
-      if (Number(inv.total_amount) <= 0) return;
+      const remaining = Number(inv.total_amount) - Number(inv.paid_amount || 0);
+      if (remaining <= 0 && inv.status !== 'paid') return;
       const card = cards.find(c => c.card_id === inv.card_id);
       allTx.push({
         transaction_id: 'invoice_' + inv.invoice_id,
         type: 'expense',
         description: `Fatura ${card?.name || 'Cartão'}`,
-        expected_amount: inv.total_amount,
+        expected_amount: Math.max(0, remaining),
         actual_amount: inv.paid_amount || '',
         category_id: '',
         account_id: '',
@@ -388,6 +389,42 @@
 
   function isRecurring(tx) { return tx.is_recurring==true||tx.is_recurring==='TRUE'||tx._virtual; }
 
+  // ===== Dias até o vencimento + chip de status =====
+  function daysUntil(dateStr) {
+    const today = new Date(); today.setHours(0,0,0,0);
+    const d = new Date(String(dateStr).split('T')[0] + 'T00:00:00');
+    return Math.round((d - today) / 86400000);
+  }
+  function relDays(n) {
+    const a = Math.abs(n);
+    if (n < 0) return `há ${a} dia${a!==1?'s':''}`;
+    if (n === 0) return 'hoje';
+    return `em ${n} dia${n!==1?'s':''}`;
+  }
+  function chipHtml(tx) {
+    // PAGA / RECEBIDA → verde, com a data
+    if (tx.status === 'paid') {
+      const when = tx.paid_date ? ' em ' + Utils.formatDate(tx.paid_date) : '';
+      return `<span class="badge b-paid">${tx.type==='income'?'✓ Recebido':'✓ Pago'}${when}</span>`;
+    }
+    const n = daysUntil(tx.due_date);
+    const rel = relDays(n);
+    // PREVISTA (recorrente) → azul
+    if (isRecurring(tx)) {
+      const tail = n < 0 ? 'venceu ' + rel : n === 0 ? 'vence hoje' : 'vence ' + rel;
+      return `<span class="badge" style="background:#E0E7FF;color:#4338CA;">🔄 Previsto · ${tail}</span>`;
+    }
+    // RECEITA avulsa a receber → azul
+    if (tx.type === 'income') {
+      return `<span class="badge" style="background:#E0E7FF;color:#4338CA;">📥 A receber ${rel}</span>`;
+    }
+    // DESPESA avulsa
+    if (n < 0)  return `<span class="badge b-over">⚠ Venceu ${rel}</span>`;
+    if (n === 0) return `<span class="badge" style="background:var(--red-bg);color:var(--red);">⚠ Vence hoje</span>`;
+    if (n <= 3) return `<span class="badge" style="background:#FEF3C7;color:#B45309;">Vence ${rel}</span>`;
+    return `<span class="badge" style="background:var(--bg-input);color:var(--text-3);">Vence ${rel}</span>`;
+  }
+
   function renderList() {
     const today = new Date().toISOString().split('T')[0];
     let f = allTx.filter(t=>t.status!=='cancelled');
@@ -405,10 +442,19 @@
     const pending    = f.filter(t => t.status!=='paid' && t.due_date >= today && !isRecurring(t));
     const paid       = f.filter(t => t.status==='paid');
 
+    // Ordenação por vencimento mais próximo (pagas: pagamento mais recente primeiro)
+    const byDueAsc  = (a,b) => String(a.due_date).localeCompare(String(b.due_date));
+    const byPaidDesc = (a,b) => String(b.paid_date||b.due_date).localeCompare(String(a.paid_date||a.due_date));
+    overdue.sort(byDueAsc);
+    lateIncome.sort(byDueAsc);
+    recurring.sort(byDueAsc);
+    pending.sort(byDueAsc);
+    paid.sort(byPaidDesc);
+
     let html='';
     if (overdue.length>0)    html+=`<div class="date-label">⚠ Vencidas</div><div class="tx-list">${overdue.map(renderCard).join('')}</div>`;
     if (lateIncome.length>0) html+=`<div class="date-label">📥 A receber</div><div class="tx-list">${lateIncome.map(renderCard).join('')}</div>`;
-    if (recurring.length>0)  html+=`<div class="date-label">🔄 Recorrentes</div><div class="tx-list">${recurring.map(renderCard).join('')}</div>`;
+    if (recurring.length>0)  html+=`<div class="date-label">🔄 Previstos</div><div class="tx-list">${recurring.map(renderCard).join('')}</div>`;
     if (pending.length>0)    html+=`<div class="date-label">📋 Pendentes</div><div class="tx-list">${pending.map(renderCard).join('')}</div>`;
     if (paid.length>0)       html+=`<div class="date-label">✓ Concluídas</div><div class="tx-list">${paid.map(renderCard).join('')}</div>`;
     document.getElementById('list-container').innerHTML=html;
@@ -424,6 +470,8 @@
       const card = tx._card;
       const cardColor = card?.color || '#6D28D9';
       const purchaseCount = inv.transactions?.length || inv.purchase_count || 0;
+      const n = daysUntil(tx.due_date);
+      const dueTxt = tx.status==='paid' ? (tx.paid_date?'Paga em '+Utils.formatDate(tx.paid_date):'Paga') : (n<0?'Venceu '+relDays(n):'Vence '+relDays(n));
       const statusLabel = inv.status === 'paid' ? '✓ Paga' : inv.status === 'closed' ? '🔒 Fechada' : '🔓 Aberta';
       const badgeColor = inv.status === 'paid' ? 'var(--green)' : isOverdue ? 'var(--red)' : 'var(--accent-2)';
 
@@ -431,12 +479,12 @@
         <div class="tx-ico" style="background:${cardColor}22;font-size:18px;">💳</div>
         <div class="tx-body">
           <div class="tx-name">${tx.description}</div>
-          <div class="tx-cat">${purchaseCount} compra${purchaseCount!==1?'s':''} · ${isOverdue ? 'Venceu '+Utils.formatDate(tx.due_date) : 'Vence '+Utils.formatDate(tx.due_date)}</div>
+          <div class="tx-cat">${purchaseCount} compra${purchaseCount!==1?'s':''} · ${dueTxt}</div>
           <div><span class="badge" style="background:${badgeColor}22;color:${badgeColor};">${statusLabel}</span></div>
         </div>
         <div class="tx-right">
           <div class="tx-amt tx-neg">-${Utils.formatCurrency(tx.expected_amount)}</div>
-          ${inv.status === 'closed' ? `<button class="pay-btn" onclick="event.stopPropagation();payInvoice('${inv.invoice_id}',${inv.total_amount})">Pagar</button>` : ''}
+          ${inv.status !== 'paid' ? `<button class="pay-btn" onclick="event.stopPropagation();window.location.href='card-detail.html?id=${card?.card_id}'">Pagar</button>` : ''}
         </div>
       </div>`;
     }
@@ -445,20 +493,9 @@
     const acc  = accounts.find(a=>a.account_id===tx.account_id);
     const icon = cat?.icon||(tx.type==='income'?'💼':'💰');
     const sub  = [cat?.name+(cat?.subcategory?' · '+cat.subcategory:''), acc?.name].filter(Boolean).join(' · ');
-    const virtualTag = tx._virtual ? '<span class="badge" style="background:var(--accent-light);color:var(--accent-2);margin-left:4px;">🔄 Fixo</span>' : '';
     const pastTag = tx._overdue_from_past ? `<span class="badge" style="background:#FEF3C7;color:#92400E;margin-left:4px;">📅 ${Utils.formatMonth(String(tx.due_date).slice(0,7))}</span>` : '';
-    const instTag = tx.installment_number ? `<span class="badge" style="background:#FEF3C7;color:#92400E;margin-left:4px;">📌 ${tx.installment_number}ª parc.</span>` : '';
 
-    let badge='';
-    if (tx.status==='paid') {
-      badge = `<span class="badge b-paid">${tx.type==='income'?'✓ Recebido':'✓ Pago'}</span>`;
-    } else if (isOverdue) {
-      badge = `<span class="badge b-over">⚠ Venceu ${Utils.formatDate(tx.due_date)}</span>`;
-    } else if (tx.type==='income' && tx.due_date < today) {
-      badge = `<span class="badge b-pend">📥 Previsto ${Utils.formatDate(tx.due_date)}</span>`;
-    } else {
-      badge = `<span class="badge b-pend">${tx.type==='income'?'Previsto':'Vence'} ${Utils.formatDate(tx.due_date)}</span>`;
-    }
+    const badge = chipHtml(tx);
 
     let amtHtml='';
     if (tx.status==='paid'&&tx.actual_amount&&Math.abs(Number(tx.actual_amount)-Number(tx.expected_amount))>0.01) {
@@ -494,7 +531,7 @@
       <div class="tx-body">
         <div class="tx-name">${tx.description}</div>
         <div class="tx-cat">${sub}</div>
-        <div>${badge}${virtualTag}${pastTag}${instTag}</div>
+        <div>${badge}${pastTag}</div>
       </div>
       <div class="tx-right">${amtHtml}${payBtn}</div>
     </div>`;
@@ -751,10 +788,9 @@
     const installments=parseInt(document.getElementById('cm-installments').value)||1;
     if (!desc||!amount||!date||!cardId) { Utils.toast('Preencha todos os campos obrigatórios','error'); return; }
     const btn=document.getElementById('cm-save-btn'); btn.disabled=true; btn.textContent='Salvando...';
-    
+
     let res;
     if (installments > 1) {
-      // Compra parcelada
       res = await API.call('invoices.createInstallment', {
         card_id: cardId,
         description: desc,
@@ -764,19 +800,18 @@
         category_id: document.getElementById('cm-category').value
       });
     } else {
-      // Compra à vista
       res = await API.createTransaction({type:'expense',description:desc,expected_amount:amount,due_date:date,card_id:cardId,category_id:document.getElementById('cm-category').value});
       if (res.success) {
         await API.markPaid({transaction_id:res.data.transaction_id,paid_date:date,actual_amount:amount});
       }
     }
-    
+
     btn.disabled=false; btn.textContent='Registrar Compra';
-    if (res.success) { 
+    if (res.success) {
       const msg = installments > 1 ? `✅ ${installments} parcelas criadas!` : '✅ Compra registrada!';
-      Utils.toast(msg); 
-      closeCardModal(); 
-      load(); 
+      Utils.toast(msg);
+      closeCardModal();
+      load();
     } else Utils.toast(res.error||'Erro','error');
   }
 
