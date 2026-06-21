@@ -6,6 +6,14 @@
   <title>FinançasPRO — Metas</title>
   <link rel="stylesheet" href="../css/style.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+  <style>
+    .gd-stat{background:var(--bg-input);border-radius:10px;padding:10px;}
+    .gd-stat-lbl{font-size:10px;color:var(--text-3);}
+    .gd-stat-val{font-size:14px;font-weight:700;color:var(--text);margin-top:2px;}
+    .apt-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:0.5px solid var(--border);}
+    .apt-row:last-child{border-bottom:none;}
+    .apt-ico{width:34px;height:34px;border-radius:10px;background:#16A34A22;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+  </style>
 </head>
 <body>
 <div class="page">
@@ -20,8 +28,6 @@
         </div>
       </div>
     </div>
-  </div>
-
   </div>
 
   <div id="list-container" style="padding:14px;">
@@ -41,11 +47,12 @@
   </div>
 </div>
 
-<!-- Modal nova meta -->
+<!-- Modal nova/editar meta -->
 <div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)closeModal()">
   <div class="modal">
     <div class="modal-handle"></div>
-    <div class="modal-header"><span class="modal-title">Nova Meta</span><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="modal-header"><span class="modal-title" id="goal-modal-title">Nova Meta</span><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <input type="hidden" id="g-id">
     <div class="field"><label class="field-label">Nome da meta *</label><input type="text" id="g-name" placeholder="Ex: Viagem, Reserva emergência..."></div>
     <div class="field"><label class="field-label">Valor alvo (R$) *</label><input type="number" id="g-target" placeholder="10000" step="0.01" min="0"></div>
     <div class="field"><label class="field-label">Contribuição mensal (R$)</label><input type="number" id="g-monthly" placeholder="500" step="0.01" min="0"></div>
@@ -54,13 +61,47 @@
   </div>
 </div>
 
-<!-- Modal adicionar valor -->
+<!-- Modal adicionar valor (aporte) -->
 <div class="modal-overlay" id="add-modal" onclick="if(event.target===this)closeAddModal()">
   <div class="modal">
     <div class="modal-handle"></div>
-    <div class="modal-header"><span class="modal-title" id="add-modal-title">Adicionar à Meta</span><button class="modal-close" onclick="closeAddModal()">✕</button></div>
-    <div class="field"><label class="field-label">Valor a adicionar (R$) *</label><input type="number" id="add-amount" placeholder="0,00" step="0.01" min="0"></div>
-    <button class="btn btn-primary" id="add-btn" onclick="saveAddAmount()">💰 Adicionar</button>
+    <div class="modal-header"><span class="modal-title" id="add-modal-title">Guardar dinheiro</span><button class="modal-close" onclick="closeAddModal()">✕</button></div>
+    <div class="field"><label class="field-label">Valor a guardar (R$) *</label><input type="number" id="add-amount" placeholder="0,00" step="0.01" min="0"></div>
+    <div class="field"><label class="field-label">De qual conta? *</label><select id="add-account"><option value="">Selecione</option></select></div>
+    <div class="field"><label class="field-label">Data</label><input type="date" id="add-date"></div>
+    <p style="font-size:10px;color:var(--text-3);margin-bottom:12px;">💡 O valor sai da conta escolhida e entra na meta.</p>
+    <button class="btn btn-primary" id="add-btn" onclick="saveAddAmount()">💰 Guardar</button>
+  </div>
+</div>
+
+<!-- Modal detalhe da meta -->
+<div class="modal-overlay" id="detail-modal" onclick="if(event.target===this)closeDetail()">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header"><span class="modal-title" id="gd-name">Meta</span><button class="modal-close" onclick="closeDetail()">✕</button></div>
+    <div id="gd-body"></div>
+    <button class="btn btn-primary" onclick="openAddModalFromDetail()" style="margin-top:6px;">💰 Guardar dinheiro</button>
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <button onclick="editGoalFromDetail()" style="flex:1;padding:12px;border-radius:var(--radius-sm);border:1.5px solid var(--accent-2);background:transparent;color:var(--accent-2);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;">✏️ Editar</button>
+      <button onclick="deleteGoalFromDetail()" style="flex:1;padding:12px;border-radius:var(--radius-sm);border:1.5px solid var(--red);background:var(--red-bg);color:var(--red);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;">🗑 Excluir</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal confirmar exclusão -->
+<div class="modal-overlay" id="confirm-delete-modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div style="text-align:center;padding:8px 0 16px;">
+      <div style="font-size:40px;margin-bottom:12px;">🗑️</div>
+      <p style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:8px;">Excluir meta?</p>
+      <p style="font-size:13px;color:var(--text-3);margin-bottom:4px;" id="confirm-goal-name"></p>
+      <p style="font-size:12px;color:var(--text-3);">Os aportes já feitos continuam no seu histórico de lançamentos.</p>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button onclick="closeConfirmDelete()" style="flex:1;padding:12px;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:transparent;color:var(--text-3);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;">Cancelar</button>
+      <button onclick="doDeleteGoal()" id="confirm-delete-btn" style="flex:1;padding:12px;border-radius:var(--radius-sm);border:none;background:var(--red);color:#fff;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;">Excluir</button>
+    </div>
   </div>
 </div>
 
@@ -73,12 +114,20 @@
   applyTheme();
   injectNav('goals.html');
 
-  let goals = [], selectedGoal = null;
+  let goals = [], accounts = [], allContributions = [], selectedGoal = null, addFromDetail = false;
   const GOAL_GRADIENTS = ['linear-gradient(90deg,#4F46E5,#A855F7)','linear-gradient(90deg,#0369A1,#0EA5E9)','linear-gradient(90deg,#065F46,#10B981)','linear-gradient(90deg,#BE185D,#EC4899)'];
 
+  function gradFor(i) { return GOAL_GRADIENTS[i % GOAL_GRADIENTS.length]; }
+
   async function load() {
-    const res = await API.listGoals();
-    goals = res.success ? res.data : [];
+    const [goalRes, txRes, accRes] = await Promise.all([
+      API.listGoals(),
+      API.listTransactions({all:true}),
+      API.listAccounts()
+    ]);
+    goals = goalRes.success ? goalRes.data : [];
+    accounts = accRes.success ? accRes.data : [];
+    allContributions = (txRes.success ? txRes.data : []).filter(t => String(t.notes||'').indexOf('Aporte meta ') === 0);
 
     if (goals.length === 0) {
       document.getElementById('list-container').innerHTML = `
@@ -101,7 +150,7 @@
       const remaining = Math.max(0, target - curr);
       const months    = monthly > 0 ? Math.ceil(remaining/monthly) : null;
       return `
-        <div class="gcard">
+        <div class="gcard" style="cursor:pointer;" onclick="openDetail('${g.goal_id}')">
           <div class="gcard-top">
             <span class="gcard-name">${g.name}</span>
             <span class="gcard-pct">${pct}%</span>
@@ -111,10 +160,10 @@
             <span class="gcard-curr">${Utils.formatCurrency(curr)}</span>
             <span class="gcard-target">de ${Utils.formatCurrency(target)}</span>
           </div>
-          <div class="gcard-prog"><div class="gcard-fill" style="width:${pct}%;background:${GOAL_GRADIENTS[i%GOAL_GRADIENTS.length]};"></div></div>
+          <div class="gcard-prog"><div class="gcard-fill" style="width:${pct}%;background:${gradFor(i)};"></div></div>
           <div class="gcard-footer">
-            <span class="gcard-info">${months ? `~${months} meses restantes` : `${Utils.formatCurrency(remaining)} restante`}</span>
-            <button class="gcard-btn" onclick="openAddModal('${g.goal_id}','${g.name}',${curr},${target})">+ Adicionar</button>
+            <span class="gcard-info">${months ? `~${months} ${months>1?'meses':'mês'} restantes` : `${Utils.formatCurrency(remaining)} restante`}</span>
+            <button class="gcard-btn" onclick="event.stopPropagation();openAddModal('${g.goal_id}')">+ Guardar</button>
           </div>
         </div>`;
     }).join('');
@@ -122,7 +171,7 @@
     if (done.length > 0) {
       html += `<p style="font-size:11px;font-weight:700;color:var(--text-3);margin:16px 0 8px;text-transform:uppercase;letter-spacing:0.05em;">Concluídas</p>`;
       html += done.map(g=>`
-        <div class="gcard" style="opacity:0.7;border-color:var(--green-bg);">
+        <div class="gcard" style="opacity:0.75;border-color:var(--green-bg);cursor:pointer;" onclick="openDetail('${g.goal_id}')">
           <div style="display:flex;align-items:center;gap:10px;">
             <span style="font-size:1.3rem;">✅</span>
             <div>
@@ -134,42 +183,152 @@
     }
 
     document.getElementById('list-container').innerHTML = html;
+
+    // Se o detalhe estava aberto, atualiza
+    if (selectedGoal && document.getElementById('detail-modal').classList.contains('open')) {
+      renderDetail(selectedGoal);
+    }
   }
 
-  function openModal() { document.getElementById('modal-overlay').classList.add('open'); }
+  // ── Detalhe ────────────────────────────────────────────
+  function openDetail(goalId) { selectedGoal = goalId; renderDetail(goalId); document.getElementById('detail-modal').classList.add('open'); }
+  function closeDetail() { document.getElementById('detail-modal').classList.remove('open'); selectedGoal = null; }
+
+  function renderDetail(goalId) {
+    const g = goals.find(x => x.goal_id === goalId);
+    if (!g) { closeDetail(); return; }
+    const curr = Number(g.current_amount)||0, target = Number(g.target_amount)||1;
+    const pct = Math.min(100, Math.round((curr/target)*100));
+    const remaining = Math.max(0, target - curr);
+    const monthly = Number(g.monthly_contribution)||0;
+    const months = monthly>0 ? Math.ceil(remaining/monthly) : null;
+    const contribs = allContributions
+      .filter(c => String(c.notes) === 'Aporte meta ' + goalId)
+      .sort((a,b)=> new Date(b.paid_date) - new Date(a.paid_date));
+
+    document.getElementById('gd-name').textContent = g.name;
+    document.getElementById('gd-body').innerHTML = `
+      <div style="text-align:center;margin-bottom:14px;">
+        <div style="font-size:30px;font-weight:800;color:var(--text);">${Utils.formatCurrency(curr)}</div>
+        <div style="font-size:12px;color:var(--text-3);">de ${Utils.formatCurrency(target)} · ${pct}%</div>
+        <div class="gcard-prog" style="margin-top:10px;"><div class="gcard-fill" style="width:${pct}%;background:${gradFor(0)};"></div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
+        <div class="gd-stat"><div class="gd-stat-lbl">Falta guardar</div><div class="gd-stat-val">${Utils.formatCurrency(remaining)}</div></div>
+        <div class="gd-stat"><div class="gd-stat-lbl">${months?'Previsão':'Aporte mensal'}</div><div class="gd-stat-val">${months?('~'+months+' '+(months>1?'meses':'mês')):(monthly>0?Utils.formatCurrency(monthly):'—')}</div></div>
+      </div>
+      ${g.target_date?`<p style="font-size:11px;color:var(--text-3);margin-bottom:14px;">📅 Data alvo: ${Utils.formatDate(g.target_date)}</p>`:''}
+      <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px;">Histórico de aportes ${contribs.length?`(${contribs.length})`:''}</div>
+      ${contribs.length===0
+        ? `<p style="font-size:12px;color:var(--text-3);padding-bottom:8px;">Nenhum aporte ainda. Toque em "Guardar dinheiro" para começar.</p>`
+        : contribs.map(c=>`
+            <div class="apt-row">
+              <div class="apt-ico">💰</div>
+              <div style="flex:1;"><div style="font-size:12px;color:var(--text-3);">${Utils.formatDate(c.paid_date)}</div></div>
+              <div style="font-size:13px;font-weight:700;color:#16A34A;">+${Utils.formatCurrency(c.actual_amount)}</div>
+            </div>`).join('')}
+    `;
+  }
+
+  // ── Nova/Editar meta ───────────────────────────────────
+  function openModal() {
+    document.getElementById('g-id').value = '';
+    document.getElementById('goal-modal-title').textContent = 'Nova Meta';
+    document.getElementById('save-btn').textContent = 'Criar Meta';
+    ['g-name','g-target','g-monthly','g-date'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('modal-overlay').classList.add('open');
+  }
   function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
 
-  function openAddModal(goalId, name, curr, target) {
-    selectedGoal = { goalId, curr, target };
-    document.getElementById('add-modal-title').textContent = name;
-    document.getElementById('add-amount').value = '';
-    document.getElementById('add-modal').classList.add('open');
-  }
-  function closeAddModal() { document.getElementById('add-modal').classList.remove('open'); selectedGoal = null; }
-
-  async function saveAddAmount() {
-    const amount = parseFloat(document.getElementById('add-amount').value);
-    if (!amount || !selectedGoal) { Utils.toast('Digite um valor','error'); return; }
-    const newAmount = Math.min(selectedGoal.target, selectedGoal.curr + amount);
-    const isComplete = newAmount >= selectedGoal.target;
-    const btn = document.getElementById('add-btn');
-    btn.disabled=true; btn.textContent='Salvando...';
-    const res = await API.updateGoal({goal_id:selectedGoal.goalId, current_amount:newAmount, status:isComplete?'completed':'active'});
-    btn.disabled=false; btn.textContent='💰 Adicionar';
-    if (res.success) { Utils.toast(isComplete?'🎉 Meta concluída!':'💰 Meta atualizada!'); closeAddModal(); load(); }
-    else Utils.toast(res.error||'Erro','error');
+  function editGoalFromDetail() {
+    const g = goals.find(x => x.goal_id === selectedGoal);
+    if (!g) return;
+    closeDetail();
+    document.getElementById('g-id').value = g.goal_id;
+    document.getElementById('goal-modal-title').textContent = 'Editar Meta';
+    document.getElementById('save-btn').textContent = 'Salvar Alterações';
+    document.getElementById('g-name').value = g.name;
+    document.getElementById('g-target').value = Number(g.target_amount)||'';
+    document.getElementById('g-monthly').value = Number(g.monthly_contribution)||'';
+    document.getElementById('g-date').value = g.target_date ? String(g.target_date).split('T')[0] : '';
+    document.getElementById('modal-overlay').classList.add('open');
   }
 
   async function saveGoal() {
     const name   = document.getElementById('g-name').value.trim();
     const target = parseFloat(document.getElementById('g-target').value);
     if (!name || !target) { Utils.toast('Preencha nome e valor alvo','error'); return; }
-    const btn = document.getElementById('save-btn');
+    const id = document.getElementById('g-id').value;
+    const btn = document.getElementById('save-btn'); const label = btn.textContent;
     btn.disabled=true; btn.textContent='Salvando...';
-    const res = await API.createGoal({name, target_amount:target, monthly_contribution:parseFloat(document.getElementById('g-monthly').value)||0, target_date:document.getElementById('g-date').value, current_amount:0});
-    btn.disabled=false; btn.textContent='Criar Meta';
-    if (res.success) { Utils.toast('🎯 Meta criada!'); closeModal(); ['g-name','g-target','g-monthly','g-date'].forEach(id=>document.getElementById(id).value=''); load(); }
+    const payload = {
+      name, target_amount:target,
+      monthly_contribution: parseFloat(document.getElementById('g-monthly').value)||0,
+      target_date: document.getElementById('g-date').value
+    };
+    const res = id
+      ? await API.updateGoal({goal_id:id, ...payload})
+      : await API.createGoal({...payload, current_amount:0});
+    btn.disabled=false; btn.textContent=label;
+    if (res.success) { Utils.toast(id?'✅ Meta atualizada!':'🎯 Meta criada!'); closeModal(); load(); }
     else Utils.toast(res.error||'Erro','error');
+  }
+
+  // ── Excluir ────────────────────────────────────────────
+  function deleteGoalFromDetail() {
+    const g = goals.find(x => x.goal_id === selectedGoal);
+    if (!g) return;
+    document.getElementById('confirm-goal-name').textContent = g.name;
+    document.getElementById('detail-modal').classList.remove('open');
+    document.getElementById('confirm-delete-modal').classList.add('open');
+  }
+  function closeConfirmDelete() { document.getElementById('confirm-delete-modal').classList.remove('open'); }
+  async function doDeleteGoal() {
+    if (!selectedGoal) return;
+    const btn = document.getElementById('confirm-delete-btn'); btn.disabled=true; btn.textContent='Excluindo...';
+    const res = await API.call('goals.delete', { goal_id: selectedGoal });
+    btn.disabled=false; btn.textContent='Excluir';
+    if (res.success) { Utils.toast('✅ Meta excluída!'); closeConfirmDelete(); selectedGoal=null; load(); }
+    else Utils.toast(res.error||'Erro','error');
+  }
+
+  // ── Aporte (guardar dinheiro) ──────────────────────────
+  function openAddModal(goalId) {
+    selectedGoal = goalId;
+    addFromDetail = false;
+    prepAddModal(goalId);
+  }
+  function openAddModalFromDetail() {
+    addFromDetail = true;
+    document.getElementById('detail-modal').classList.remove('open');
+    prepAddModal(selectedGoal);
+  }
+  function prepAddModal(goalId) {
+    const g = goals.find(x => x.goal_id === goalId);
+    document.getElementById('add-modal-title').textContent = g ? g.name : 'Guardar dinheiro';
+    document.getElementById('add-amount').value = '';
+    document.getElementById('add-date').value = new Date().toISOString().split('T')[0];
+    document.getElementById('add-account').innerHTML = '<option value="">Selecione</option>' +
+      accounts.map(a=>`<option value="${a.account_id}">${a.name} · ${Utils.formatCurrency(a.current_balance)}</option>`).join('');
+    document.getElementById('add-modal').classList.add('open');
+  }
+  function closeAddModal() { document.getElementById('add-modal').classList.remove('open'); }
+
+  async function saveAddAmount() {
+    const amount = parseFloat(document.getElementById('add-amount').value);
+    const accountId = document.getElementById('add-account').value;
+    const date = document.getElementById('add-date').value;
+    if (!amount || amount<=0) { Utils.toast('Digite um valor','error'); return; }
+    if (!accountId) { Utils.toast('Selecione a conta','error'); return; }
+    const btn = document.getElementById('add-btn'); btn.disabled=true; btn.textContent='Guardando...';
+    const res = await API.call('goals.addContribution', { goal_id: selectedGoal, account_id: accountId, amount, date });
+    btn.disabled=false; btn.textContent='💰 Guardar';
+    if (res.success) {
+      Utils.toast(res.data?.status==='completed' ? '🎉 Meta concluída!' : '💰 Dinheiro guardado!');
+      closeAddModal();
+      await load();
+      if (addFromDetail && selectedGoal) openDetail(selectedGoal);
+    } else Utils.toast(res.error||'Erro','error');
   }
 
   load();
