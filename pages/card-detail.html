@@ -185,7 +185,7 @@
   const cardId = params.get('id');
   if (!cardId) window.location.href = 'cards.html';
 
-  let card = null, allTransactions = [], invoiceTx = [], categories = [], allInvoices = [], accounts = [];
+  let card = null, allTransactions = [], invoiceTx = [], categories = [], allInvoices = [], accounts = [], allPayments = [];
   let selectedEditColor = '#6D28D9';
   let selectedPayAccount = null;
   let activeTab = 'purchases';
@@ -231,7 +231,9 @@
     card = cards.find(c => c.card_id === cardId);
     if (!card) { Utils.toast('Cartão não encontrado','error'); setTimeout(()=>window.location.href='cards.html',1500); return; }
 
-    allTransactions = txRes.success ? txRes.data.filter(t => t.card_id === cardId) : [];
+    const allTx = txRes.success ? txRes.data : [];
+    allTransactions = allTx.filter(t => t.card_id === cardId);
+    allPayments = allTx.filter(t => String(t.notes||'').indexOf('Pagamento da fatura ') === 0);
     allInvoices = invRes.success ? invRes.data : [];
     categories = catRes.success ? catRes.data : [];
     accounts = accRes.success ? accRes.data : [];
@@ -373,12 +375,12 @@
     const container = document.getElementById('tab-content');
 
     if (activeTab === 'purchases') {
-      if (invoiceTx.length === 0) {
-        container.innerHTML = `<div style="text-align:center;padding:32px 16px;color:var(--text-3);font-size:13px;">Nenhuma compra na fatura atual.</div>`;
-        return;
-      }
+      const inv = sortedInvoices[currentInvoiceIndex] || null;
       const sorted = [...invoiceTx].sort((a,b) => new Date(b.due_date) - new Date(a.due_date));
-      container.innerHTML = `
+
+      const comprasHtml = invoiceTx.length === 0
+        ? `<div style="text-align:center;padding:32px 16px;color:var(--text-3);font-size:13px;">Nenhuma compra nesta fatura.</div>`
+        : `
         <div style="background:var(--bg-card);border-radius:14px;padding:14px;border:0.5px solid var(--border);">
           <div class="sec-title-detail">Compras da fatura</div>
           ${sorted.map(t => {
@@ -394,8 +396,31 @@
               </div>
             `;
           }).join('')}
-        </div>
-      `;
+        </div>`;
+
+      const payments = inv ? allPayments.filter(p =>
+        p.invoice_id === inv.invoice_id || String(p.notes||'') === 'Pagamento da fatura ' + inv.invoice_id
+      ) : [];
+      const paymentsHtml = payments.length === 0 ? '' : `
+        <div style="background:var(--bg-card);border-radius:14px;padding:14px;border:0.5px solid var(--border);margin-top:10px;">
+          <div class="sec-title-detail">Pagamentos</div>
+          ${[...payments].sort((a,b)=> new Date(b.paid_date) - new Date(a.paid_date)).map(p => {
+            const isPartial = String(p.description||'').toLowerCase().includes('parcial');
+            return `
+              <div class="purchase-item">
+                <div class="purchase-icon" style="background:#16A34A22;">💸</div>
+                <div class="purchase-body">
+                  <div class="purchase-name">Pagamento${isPartial?' parcial':''}</div>
+                  <div class="purchase-cat">${Utils.formatDate(p.paid_date)}</div>
+                </div>
+                <div class="purchase-amt" style="color:#16A34A;">+${Utils.formatCurrency(p.actual_amount)}</div>
+              </div>
+            `;
+          }).join('')}
+        </div>`;
+
+      container.innerHTML = comprasHtml + paymentsHtml;
+      return;
     }
 
     if (activeTab === 'categories') {
