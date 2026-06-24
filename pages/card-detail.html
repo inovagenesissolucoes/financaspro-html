@@ -4,21 +4,21 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>FinançasPRO — Detalhe do Cartão</title>
-  <!-- ===== PWA (colar dentro do <head> de CADA página: index.html, recover.html e tudo em /pages) ===== -->
-<link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#7C3AED">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="FinançasPRO">
-<link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', function () {
-      navigator.serviceWorker.register('/sw.js').catch(function(){});
-    });
-  }
-</script>
-<!-- ===== fim PWA ===== -->
+  <!-- ===== PWA ===== -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#7C3AED">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="FinançasPRO">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('/sw.js').catch(function(){});
+      });
+    }
+  </script>
+  <!-- ===== fim PWA ===== -->
   <link rel="stylesheet" href="../css/style.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
   <style>
@@ -117,8 +117,57 @@
   <div class="modal">
     <div class="modal-handle"></div>
     <div class="modal-header"><span class="modal-title">Ações do cartão</span><button class="modal-close" onclick="closeActionsMenu()">✕</button></div>
+    <button class="action-sheet-btn" onclick="closeActionsMenu();openPurchaseModal()">➕ Nova compra</button>
     <button class="action-sheet-btn" onclick="closeActionsMenu();openEditModal()">✏️ Editar cartão</button>
     <button class="action-sheet-btn" onclick="closeActionsMenu();openDeleteModal()" style="color:var(--red);">🗑 Excluir cartão</button>
+  </div>
+</div>
+
+<!-- Modal nova compra -->
+<div class="modal-overlay" id="purchase-modal" onclick="if(event.target===this)closePurchaseModal()">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header"><span class="modal-title">Nova compra</span><button class="modal-close" onclick="closePurchaseModal()">✕</button></div>
+    <div class="field"><label class="field-label">Descrição *</label><input type="text" id="p-desc" placeholder="Ex: Mercado, Farmácia..."></div>
+    <div class="field"><label class="field-label">Valor total (R$) *</label><input type="text" id="p-amount" inputmode="decimal" placeholder="0,00" oninput="currencyInput(this);updatePurchasePreview()" onblur="currencyBlur(this);updatePurchasePreview()"></div>
+    <div class="field"><label class="field-label">Categoria</label><select id="p-category"></select></div>
+    <div class="grid-2">
+      <div class="field"><label class="field-label">Data da compra</label><input type="date" id="p-date"></div>
+      <div class="field"><label class="field-label">Parcelas</label><input type="number" id="p-installments" value="1" min="1" max="48" oninput="updatePurchasePreview()"></div>
+    </div>
+    <div id="p-preview" style="font-size:12px;color:var(--accent-2);font-weight:700;margin-bottom:12px;min-height:16px;"></div>
+    <button class="btn btn-primary" id="p-save-btn" onclick="savePurchase()">Adicionar compra</button>
+  </div>
+</div>
+
+<!-- Modal detalhe/editar lançamento -->
+<div class="modal-overlay" id="tx-modal" onclick="if(event.target===this)closeTxModal()">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header"><span class="modal-title">Lançamento</span><button class="modal-close" onclick="closeTxModal()">✕</button></div>
+    <div id="tx-parcela-info" style="display:none;font-size:11px;color:var(--text-3);background:var(--bg-input);padding:8px 12px;border-radius:10px;margin-bottom:12px;"></div>
+    <div class="field"><label class="field-label">Descrição *</label><input type="text" id="tx-desc"></div>
+    <div class="field"><label class="field-label">Valor (R$) *</label><input type="text" id="tx-amount" inputmode="decimal" oninput="currencyInput(this)" onblur="currencyBlur(this)"></div>
+    <div class="field"><label class="field-label">Categoria</label><select id="tx-category"></select></div>
+    <div class="field"><label class="field-label">Data</label><input type="date" id="tx-date"></div>
+    <button class="btn btn-primary" id="tx-save-btn" onclick="saveTx()">Salvar</button>
+    <button onclick="askDeleteTx()" style="width:100%;margin-top:8px;padding:12px;border-radius:var(--radius-sm);border:1.5px solid var(--red);background:var(--red-bg);color:var(--red);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;">🗑 Excluir lançamento</button>
+  </div>
+</div>
+
+<!-- Confirmar exclusão de lançamento -->
+<div class="modal-overlay" id="tx-delete-modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div style="text-align:center;padding:8px 0 16px;">
+      <div style="font-size:40px;margin-bottom:12px;">🗑️</div>
+      <p style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:8px;">Excluir lançamento?</p>
+      <p style="font-size:12px;color:var(--text-3);">O valor será removido do total da fatura.</p>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button onclick="closeTxDelete()" style="flex:1;padding:12px;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:transparent;color:var(--text-3);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;">Cancelar</button>
+      <button onclick="confirmDeleteTx()" id="tx-del-confirm" style="flex:1;padding:12px;border-radius:var(--radius-sm);border:none;background:var(--red);color:#fff;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;">Excluir</button>
+    </div>
   </div>
 </div>
 
@@ -200,8 +249,9 @@
   let selectedEditColor = '#6D28D9';
   let selectedPayAccount = null;
   let activeTab = 'purchases';
-  let currentInvoiceIndex = 0; // qual fatura está sendo exibida
-  let sortedInvoices = []; // todas as faturas ordenadas
+  let currentInvoiceIndex = 0;
+  let sortedInvoices = [];
+  let currentTxId = null;
 
   function currencyInput(el) { el.value = el.value.replace(/[^\d.,]/g,''); }
   function currencyBlur(el) {
@@ -214,6 +264,13 @@
     if (v.includes('.')&&v.includes(',')) v=v.replace(/\./g,'').replace(',','.');
     else if (v.includes(',')) v=v.replace(',','.');
     return parseFloat(v)||0;
+  }
+
+  function categoryOptions(selectedId) {
+    const exp = categories.filter(c => (c.type || 'expense') === 'expense');
+    return '<option value="">Sem categoria</option>' + exp.map(c =>
+      `<option value="${c.category_id}" ${c.category_id===selectedId?'selected':''}>${c.icon||'💰'} ${c.name}${c.subcategory?(' · '+c.subcategory):''}</option>`
+    ).join('');
   }
 
   function shadeColor(color, percent) {
@@ -243,18 +300,16 @@
     if (!card) { Utils.toast('Cartão não encontrado','error'); setTimeout(()=>window.location.href='cards.html',1500); return; }
 
     const allTx = txRes.success ? txRes.data : [];
-    allTransactions = allTx.filter(t => t.card_id === cardId);
+    allTransactions = allTx.filter(t => t.card_id === cardId && t.status !== 'cancelled');
     allPayments = allTx.filter(t => String(t.notes||'').indexOf('Pagamento da fatura ') === 0);
     allInvoices = invRes.success ? invRes.data : [];
     categories = catRes.success ? catRes.data : [];
     accounts = accRes.success ? accRes.data : [];
 
-    // Ordena faturas por mês de referência (do mais antigo pro mais futuro)
     sortedInvoices = [...allInvoices]
       .filter(i => Number(i.total_amount) > 0 || i.status === 'paid')
       .sort((a, b) => String(a.reference_month).localeCompare(String(b.reference_month)));
 
-    // Encontra o índice da fatura atual (próxima a vencer com saldo)
     const today = new Date().toISOString().split('T')[0];
     let defaultIndex = sortedInvoices.findIndex(i => i.status !== 'paid' && String(i.due_date) >= today);
     if (defaultIndex === -1) defaultIndex = sortedInvoices.length - 1;
@@ -276,11 +331,10 @@
     const total = Number(inv?.total_amount)||0;
     const paid = Number(inv?.paid_amount)||0;
     const remaining = Math.max(0, total - paid);
-    const used = remaining;                          // limite consumido = saldo devedor
+    const used = remaining;
     const available = Math.max(0, limit - used);
     const pct = limit>0 ? Math.min(100, Math.round((used/limit)*100)) : 0;
 
-    // Fatura já fechou? (passou o dia de fechamento do ciclo)
     let isClosed = false;
     if (inv && inv.due_date) {
       const dd = new Date(String(inv.due_date).split('T')[0] + 'T12:00:00');
@@ -291,7 +345,6 @@
       isClosed = new Date() > cd;
     }
 
-    // Atualiza tx da fatura atual
     invoiceTx = inv ? allTransactions.filter(t => t.invoice_id === inv.invoice_id) : [];
 
     document.getElementById('invoice-total').textContent = Utils.formatCurrency(remaining);
@@ -299,7 +352,6 @@
     document.getElementById('limit-pct').textContent = pct + '% usado';
     document.getElementById('invoice-bar-fill').style.width = pct + '%';
 
-    // Linha "Fatura / Pago" só quando houve pagamento parcial
     const paidLine = document.getElementById('invoice-paid-line');
     if (paid > 0) {
       paidLine.style.display = 'flex';
@@ -316,7 +368,6 @@
     else statusLabel = '🔓 Fatura aberta';
     document.getElementById('invoice-status').textContent = statusLabel;
 
-    // Mês de referência
     if (inv) {
       const refMonth = String(inv.reference_month).slice(0, 7);
       document.getElementById('invoice-month-label').textContent = Utils.formatMonth(refMonth);
@@ -324,13 +375,11 @@
       document.getElementById('invoice-month-label').textContent = '--';
     }
 
-    // Desabilita botões nos extremos
     document.getElementById('prev-invoice-btn').style.opacity = currentInvoiceIndex <= 0 ? '0.3' : '1';
     document.getElementById('prev-invoice-btn').style.cursor = currentInvoiceIndex <= 0 ? 'not-allowed' : 'pointer';
     document.getElementById('next-invoice-btn').style.opacity = currentInvoiceIndex >= sortedInvoices.length - 1 ? '0.3' : '1';
     document.getElementById('next-invoice-btn').style.cursor = currentInvoiceIndex >= sortedInvoices.length - 1 ? 'not-allowed' : 'pointer';
 
-    // Botão de pagar / badge
     const payBtn = document.getElementById('pay-invoice-btn');
     const paidBadge = document.getElementById('paid-badge');
     if (inv && remaining > 0) {
@@ -374,6 +423,8 @@
       const inv = sortedInvoices[currentInvoiceIndex] || null;
       const sorted = [...invoiceTx].sort((a,b) => new Date(b.due_date) - new Date(a.due_date));
 
+      const newPurchaseBtn = `<button onclick="openPurchaseModal()" style="width:100%;padding:13px;border:none;border-radius:12px;background:var(--accent-2);color:#fff;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:12px;">➕ Nova compra</button>`;
+
       const comprasHtml = invoiceTx.length === 0
         ? `<div style="text-align:center;padding:32px 16px;color:var(--text-3);font-size:13px;">Nenhuma compra nesta fatura.</div>`
         : `
@@ -382,7 +433,7 @@
           ${sorted.map(t => {
             const cat = categories.find(c => c.category_id === t.category_id);
             return `
-              <div class="purchase-item">
+              <div class="purchase-item" style="cursor:pointer;" onclick="openTxModal('${t.transaction_id}')">
                 <div class="purchase-icon" style="background:${(cat?.color||'#6366F1')}22;">${cat?.icon||'💳'}</div>
                 <div class="purchase-body">
                   <div class="purchase-name">${t.description}</div>
@@ -415,7 +466,7 @@
           }).join('')}
         </div>`;
 
-      container.innerHTML = comprasHtml + paymentsHtml;
+      container.innerHTML = newPurchaseBtn + comprasHtml + paymentsHtml;
       return;
     }
 
@@ -486,7 +537,6 @@
       insights.push({icon:'✅',title:'Uso saudável',desc:`Você está usando apenas ${Math.round(pct)}% do seu limite. Continue assim!`});
     }
 
-    // Compara com a fatura imediatamente anterior à atual
     const prevInv = currentInvoiceIndex > 0 ? sortedInvoices[currentInvoiceIndex - 1] : null;
     if (prevInv && currentInv) {
       const lastTotal = Number(prevInv.total_amount)||0;
@@ -584,6 +634,101 @@
   // ===== Ações do cartão (folha de ação) =====
   function openActionsMenu() { document.getElementById('actions-modal').classList.add('open'); }
   function closeActionsMenu() { document.getElementById('actions-modal').classList.remove('open'); }
+
+  // ===== Nova compra =====
+  function openPurchaseModal() {
+    document.getElementById('p-desc').value = '';
+    document.getElementById('p-amount').value = '';
+    document.getElementById('p-category').innerHTML = categoryOptions('');
+    document.getElementById('p-date').value = new Date().toISOString().split('T')[0];
+    document.getElementById('p-installments').value = 1;
+    updatePurchasePreview();
+    document.getElementById('purchase-modal').classList.add('open');
+  }
+  function closePurchaseModal() { document.getElementById('purchase-modal').classList.remove('open'); }
+
+  function updatePurchasePreview() {
+    const amount = parseCurrency(document.getElementById('p-amount').value);
+    const n = Math.max(1, parseInt(document.getElementById('p-installments').value)||1);
+    const el = document.getElementById('p-preview');
+    if (amount > 0) {
+      const per = amount / n;
+      el.textContent = n > 1
+        ? `${n}x de ${Utils.formatCurrency(per)} = ${Utils.formatCurrency(amount)}`
+        : `À vista · ${Utils.formatCurrency(amount)}`;
+    } else {
+      el.textContent = '';
+    }
+  }
+
+  async function savePurchase() {
+    const desc = document.getElementById('p-desc').value.trim();
+    const amount = parseCurrency(document.getElementById('p-amount').value);
+    const n = Math.max(1, parseInt(document.getElementById('p-installments').value)||1);
+    if (!desc) { Utils.toast('Digite a descrição','error'); return; }
+    if (!(amount > 0)) { Utils.toast('Valor inválido','error'); return; }
+    const btn = document.getElementById('p-save-btn');
+    btn.disabled = true; btn.textContent = 'Salvando...';
+    const res = await API.call('invoices.addPurchase', {
+      card_id: cardId,
+      description: desc,
+      amount: amount,
+      installments: n,
+      first_date: document.getElementById('p-date').value,
+      category_id: document.getElementById('p-category').value
+    });
+    btn.disabled = false; btn.textContent = 'Adicionar compra';
+    if (res.success) { Utils.toast(n>1?`✅ Compra em ${n}x adicionada!`:'✅ Compra adicionada!'); closePurchaseModal(); load(); }
+    else Utils.toast(res.error||'Erro','error');
+  }
+
+  // ===== Detalhe / editar / excluir lançamento =====
+  function openTxModal(txId) {
+    const t = allTransactions.find(x => x.transaction_id === txId);
+    if (!t) return;
+    currentTxId = txId;
+    document.getElementById('tx-desc').value = t.description || '';
+    document.getElementById('tx-amount').value = Number(t.expected_amount||0).toFixed(2).replace('.',',');
+    document.getElementById('tx-category').innerHTML = categoryOptions(t.category_id);
+    document.getElementById('tx-date').value = String(t.due_date).split('T')[0];
+    const pinfo = document.getElementById('tx-parcela-info');
+    if (t.installment_number) { pinfo.style.display = 'block'; pinfo.textContent = `🔢 Esta é a parcela ${t.installment_number} de uma compra parcelada. A edição afeta só esta parcela.`; }
+    else pinfo.style.display = 'none';
+    document.getElementById('tx-modal').classList.add('open');
+  }
+  function closeTxModal() { document.getElementById('tx-modal').classList.remove('open'); currentTxId = null; }
+
+  async function saveTx() {
+    if (!currentTxId) return;
+    const desc = document.getElementById('tx-desc').value.trim();
+    const amount = parseCurrency(document.getElementById('tx-amount').value);
+    if (!desc) { Utils.toast('Digite a descrição','error'); return; }
+    if (!(amount > 0)) { Utils.toast('Valor inválido','error'); return; }
+    const btn = document.getElementById('tx-save-btn');
+    btn.disabled = true; btn.textContent = 'Salvando...';
+    const res = await API.call('invoices.updatePurchase', {
+      transaction_id: currentTxId,
+      description: desc,
+      amount: amount,
+      category_id: document.getElementById('tx-category').value,
+      due_date: document.getElementById('tx-date').value
+    });
+    btn.disabled = false; btn.textContent = 'Salvar';
+    if (res.success) { Utils.toast('✅ Lançamento atualizado!'); closeTxModal(); load(); }
+    else Utils.toast(res.error||'Erro','error');
+  }
+
+  function askDeleteTx() { document.getElementById('tx-delete-modal').classList.add('open'); }
+  function closeTxDelete() { document.getElementById('tx-delete-modal').classList.remove('open'); }
+  async function confirmDeleteTx() {
+    if (!currentTxId) return;
+    const btn = document.getElementById('tx-del-confirm');
+    btn.disabled = true; btn.textContent = 'Excluindo...';
+    const res = await API.call('invoices.deletePurchase', { transaction_id: currentTxId });
+    btn.disabled = false; btn.textContent = 'Excluir';
+    if (res.success) { Utils.toast('✅ Lançamento excluído!'); closeTxDelete(); closeTxModal(); load(); }
+    else Utils.toast(res.error||'Erro','error');
+  }
 
   // ===== Pagamento de fatura =====
   function openPayModal() {
