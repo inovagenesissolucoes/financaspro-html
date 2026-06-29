@@ -54,6 +54,10 @@
     .insight-card2.alert { border-left:3px solid var(--red); }
     .insight-card2.good  { border-left:3px solid var(--green); }
     .insight-card2.warn  { border-left:3px solid #D97706; }
+
+    .period-opt { width:100%; padding:14px; margin-bottom:8px; background:var(--bg-input); border:none; border-radius:12px; font-family:inherit; font-size:14px; font-weight:600; color:var(--text); cursor:pointer; text-align:left; display:flex; align-items:center; justify-content:space-between; }
+    .period-opt.on { background:var(--accent-light); color:var(--accent-2); }
+    .period-opt.on::after { content:'✓'; font-weight:800; }
   </style>
 </head>
 <body>
@@ -70,19 +74,11 @@
       </div>
     </div>
 
-    <div style="display:flex;gap:6px;margin-top:12px;flex-wrap:wrap;">
-      <button class="period-btn active" onclick="setPeriod(3,this)">3 meses</button>
-      <button class="period-btn" onclick="setPeriod(6,this)">6 meses</button>
-      <button class="period-btn" onclick="setPeriod(12,this)">12 meses</button>
-      <button class="period-btn" onclick="openCustomPeriod()" id="custom-btn">📅 Personalizado</button>
-    </div>
-
-    <div id="custom-period" style="display:none;margin-top:10px;gap:8px;align-items:center;">
-      <input type="month" id="custom-from" style="flex:1;background:rgba(255,255,255,0.15);border:0.5px solid rgba(255,255,255,0.3);color:#fff;border-radius:9px;padding:7px 10px;font-size:12px;">
-      <span style="color:rgba(255,255,255,0.7);font-size:12px;">até</span>
-      <input type="month" id="custom-to" style="flex:1;background:rgba(255,255,255,0.15);border:0.5px solid rgba(255,255,255,0.3);color:#fff;border-radius:9px;padding:7px 10px;font-size:12px;">
-      <button onclick="applyCustomPeriod()" style="background:rgba(255,255,255,0.2);border:0.5px solid rgba(255,255,255,0.3);color:#fff;padding:7px 12px;border-radius:9px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;">Aplicar</button>
-    </div>
+    <button id="period-pill" onclick="openPeriodSheet()" style="margin-top:12px;display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,0.16);border:0.5px solid rgba(255,255,255,0.28);color:#fff;padding:9px 14px;border-radius:12px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;">
+      <i class="ti ti-calendar"></i>
+      <span id="period-pill-label">Últimos 3 meses</span>
+      <i class="ti ti-chevron-down" style="font-size:15px;opacity:0.85;"></i>
+    </button>
   </div>
 
   <!-- KPIs (base realizada) -->
@@ -138,6 +134,24 @@
 
 </div>
 
+<!-- Folha de seleção de período -->
+<div class="modal-overlay" id="period-modal" onclick="if(event.target===this)closePeriodSheet()">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header"><span class="modal-title">Período</span><button class="modal-close" onclick="closePeriodSheet()">✕</button></div>
+    <button class="period-opt" data-m="3" onclick="pickPeriod(3)">Últimos 3 meses</button>
+    <button class="period-opt" data-m="6" onclick="pickPeriod(6)">Últimos 6 meses</button>
+    <button class="period-opt" data-m="12" onclick="pickPeriod(12)">Últimos 12 meses</button>
+    <button class="period-opt" data-m="custom" onclick="toggleCustomInSheet()">📅 Período personalizado</button>
+    <div id="custom-period" style="display:none;gap:8px;align-items:center;margin-top:4px;">
+      <input type="month" id="custom-from" style="flex:1;min-width:0;background:var(--bg-input);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:11px;font-size:13px;font-family:inherit;">
+      <span style="color:var(--text-3);font-size:12px;">até</span>
+      <input type="month" id="custom-to" style="flex:1;min-width:0;background:var(--bg-input);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:11px;font-size:13px;font-family:inherit;">
+      <button onclick="applyCustomPeriod()" style="background:var(--accent-2);border:none;color:#fff;padding:11px 16px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;">Aplicar</button>
+    </div>
+  </div>
+</div>
+
 <div class="bnav-wrap">
   <div class="bnav">
     <a href="dashboard.html" class="ntab"><i class="ti ti-home"></i><span>Início</span></a>
@@ -176,19 +190,27 @@
     return months;
   }
 
-  function setPeriod(months, btn) {
+  function openPeriodSheet() {
+    document.querySelectorAll('.period-opt').forEach(b => {
+      const v = b.getAttribute('data-m');
+      const on = customMonths ? v === 'custom' : String(currentPeriod) === v;
+      b.classList.toggle('on', on);
+    });
+    document.getElementById('custom-period').style.display = customMonths ? 'flex' : 'none';
+    document.getElementById('period-modal').classList.add('open');
+  }
+  function closePeriodSheet() { document.getElementById('period-modal').classList.remove('open'); }
+
+  function pickPeriod(months) {
     currentPeriod = months; customMonths = null;
-    document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById('custom-period').style.display = 'none';
+    document.getElementById('period-pill-label').textContent = `Últimos ${months} meses`;
+    closePeriodSheet();
     loadReports();
   }
 
-  function openCustomPeriod() {
+  function toggleCustomInSheet() {
     const cp = document.getElementById('custom-period');
     cp.style.display = cp.style.display === 'none' ? 'flex' : 'none';
-    document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById('custom-btn').classList.add('active');
     const now = new Date();
     const to = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
     const from = `${now.getFullYear()}-${String(now.getMonth()-2).padStart(2,'0')}`;
@@ -210,6 +232,8 @@
       cur = `${next.getFullYear()}-${String(next.getMonth()+1).padStart(2,'0')}`;
     }
     customMonths = months;
+    document.getElementById('period-pill-label').textContent = 'Personalizado';
+    closePeriodSheet();
     loadReports();
   }
 
