@@ -4,21 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>FinançasPRO — Lançamentos</title>
-  <!-- ===== PWA (colar dentro do <head> de CADA página: index.html, recover.html e tudo em /pages) ===== -->
-<link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#7C3AED">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="FinançasPRO">
-<link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', function () {
-      navigator.serviceWorker.register('/sw.js').catch(function(){});
-    });
-  }
-</script>
-<!-- ===== fim PWA ===== -->
   <link rel="stylesheet" href="../css/style.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
 </head>
@@ -311,37 +296,28 @@
     renderList();
   }
 
-  async function load() {
-    document.getElementById('month-label').textContent = Utils.formatMonth(month);
-    document.getElementById('list-container').innerHTML = '<div style="padding:0 14px;"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>';
+  function renderFromBootstrap(bootData) {
+    accounts = bootData.accounts || [];
+    cards = bootData.cards || [];
+    categories = bootData.categories || [];
+    recurrences = bootData.recurrences || [];
 
-    const [txRes,catRes,accRes,cardRes,recRes,invRes] = await Promise.all([
-      API.listTransactions({month}),
-      API.listCategories(),
-      API.listAccounts(),
-      API.listCards(),
-      API.listRecurrences(),
-      API.call('invoices.listByMonth', {month})
-    ]);
+    // Transações do mês (sem card_id, pois cartões viram fatura agrupada)
+    const monthTx = (bootData.transactions || []).filter(t => !t.card_id);
+    allTx = [...monthTx];
 
-    // Filtra: transações com card_id NÃO aparecem (vão dentro da fatura)
-    allTx = txRes.success ? txRes.data.filter(t => !t.card_id) : [];
-    categories = catRes.success ? catRes.data : [];
-    accounts = accRes.success ? accRes.data : [];
-    cards = cardRes.success ? cardRes.data : [];
-    recurrences = recRes.success ? recRes.data : [];
-
-    // Adiciona faturas do mês como "lançamentos virtuais"
-    const invoices = invRes.success ? invRes.data : [];
-    invoices.forEach(inv => {
-      const remaining = Number(inv.total_amount) - Number(inv.paid_amount || 0);
-      if (remaining <= 0 && inv.status !== 'paid') return;
+    // Faturas do mês como "lançamentos virtuais"
+    const invoicesInMonth = (bootData.invoices || []).filter(inv => {
+      const dueMonth = String(inv.due_date).slice(0, 7);
+      return dueMonth === month && Number(inv.total_amount) > 0;
+    });
+    invoicesInMonth.forEach(inv => {
       const card = cards.find(c => c.card_id === inv.card_id);
       allTx.push({
         transaction_id: 'invoice_' + inv.invoice_id,
         type: 'expense',
         description: `Fatura ${card?.name || 'Cartão'}`,
-        expected_amount: Math.max(0, remaining),
+        expected_amount: inv.total_amount,
         actual_amount: inv.paid_amount || '',
         category_id: '',
         account_id: '',
@@ -359,10 +335,11 @@
     const currentMonth = Utils.currentMonth();
 
     if (month >= currentMonth) {
+      // Recorrências virtuais
       recurrences.forEach(rec => {
         const already = allTx.some(t => t.recurring_id === rec.recurrence_id && String(t.due_date).startsWith(month));
         if (already) return;
-        const day = String(rec.recurrence_day).padStart(2,'0');
+        const day = String(rec.recurrence_day).padStart(2, '0');
         allTx.push({
           transaction_id: 'virtual_' + rec.recurrence_id + '_' + month,
           type: rec.type, description: rec.description,
@@ -373,77 +350,48 @@
         });
       });
 
-      const pastRes = await API.listTransactions({all: true});
-      const pastTx = pastRes.success ? pastRes.data.filter(t => !t.card_id) : [];
-      pastTx.forEach(t => {
-        if (t.status !== 'pending') return;
-        if (t.type !== 'expense') return;
-        if (!(t.is_recurring == true || t.is_recurring === 'TRUE')) return;
-        const txMonth = String(t.due_date).slice(0,7);
-        if (txMonth >= month) return;
+      // Vencidas de meses anteriores
+      const overdueTx = (bootData.overdue_transactions || []).filter(t => !t.card_id);
+      overdueTx.forEach(t => {
         if (!allTx.some(a => a.transaction_id === t.transaction_id)) {
-          allTx.push({...t, _overdue_from_past: true});
+          allTx.push({ ...t, _overdue_from_past: true });
         }
       });
     }
 
-    const income = allTx.filter(t=>t.type==='income'&&t.status!=='cancelled');
-    const expense = allTx.filter(t=>t.type==='expense'&&t.status!=='cancelled');
-    // Receitas: só o que recebi de fato
-    const incomeReceived = income.filter(t=>t.status==='paid').reduce((s,t)=>s+Number(t.actual_amount||t.expected_amount||0),0);
-    // Despesas: total do mês (pago + pendente)
-    const expenseTotal = expense.reduce((s,t)=>s+Number(t.status==='paid'?(t.actual_amount||t.expected_amount):t.expected_amount||0),0);
-    // Já pago: só o que de fato saiu da conta
-    const expensePaid = expense.filter(t=>t.status==='paid').reduce((s,t)=>s+Number(t.actual_amount||t.expected_amount||0),0);
-    // Saldo = Recebido - Pago (sobra real depois dos pagamentos)
-    document.getElementById('ph-income').textContent=Utils.formatCurrency(incomeReceived);
-    document.getElementById('ph-expense').textContent=Utils.formatCurrency(expenseTotal);
-    document.getElementById('ph-net').textContent=Utils.formatCurrency(incomeReceived - expensePaid);
+    // Header
+    const income = allTx.filter(t => t.type === 'income' && t.status !== 'cancelled');
+    const expense = allTx.filter(t => t.type === 'expense' && t.status !== 'cancelled');
+    const incomeReceived = income.filter(t => t.status === 'paid').reduce((s, t) => s + Number(t.actual_amount || t.expected_amount || 0), 0);
+    const expenseTotal = expense.reduce((s, t) => s + Number(t.status === 'paid' ? (t.actual_amount || t.expected_amount) : t.expected_amount || 0), 0);
+    const expensePaid = expense.filter(t => t.status === 'paid').reduce((s, t) => s + Number(t.actual_amount || t.expected_amount || 0), 0);
+    document.getElementById('ph-income').textContent = Utils.formatCurrency(incomeReceived);
+    document.getElementById('ph-expense').textContent = Utils.formatCurrency(expenseTotal);
+    document.getElementById('ph-net').textContent = Utils.formatCurrency(incomeReceived - expensePaid);
     renderList();
   }
 
-  function isRecurring(tx) { return tx.is_recurring==true||tx.is_recurring==='TRUE'||tx._virtual; }
+  async function load() {
+    document.getElementById('month-label').textContent = Utils.formatMonth(month);
 
-  // ===== Dias até o vencimento + chip de status =====
-  function daysUntil(dateStr) {
-    const today = new Date(); today.setHours(0,0,0,0);
-    const d = new Date(String(dateStr).split('T')[0] + 'T00:00:00');
-    return Math.round((d - today) / 86400000);
-  }
-  function relDays(n) {
-    const a = Math.abs(n);
-    if (n < 0) return `há ${a} dia${a!==1?'s':''}`;
-    if (n === 0) return 'hoje';
-    return `em ${n} dia${n!==1?'s':''}`;
-  }
-  function chipHtml(tx) {
-    // PAGA / RECEBIDA → verde, com a data
-    if (tx.status === 'paid') {
-      const when = tx.paid_date ? ' em ' + Utils.formatDate(tx.paid_date) : '';
-      return `<span class="badge b-paid">${tx.type==='income'?'✓ Recebido':'✓ Pago'}${when}</span>`;
+    const bootResult = API.bootstrap(month, true);
+
+    // Se veio cache, renderiza JÁ (instantâneo)
+    if (bootResult.cached && bootResult.cached.success) {
+      renderFromBootstrap(bootResult.cached.data);
+      // Atualiza em background
+      const fresh = await bootResult.fresh;
+      if (fresh.success) renderFromBootstrap(fresh.data);
+    } else {
+      // Sem cache, mostra skeleton e aguarda
+      document.getElementById('list-container').innerHTML = '<div style="padding:0 14px;"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>';
+      const fresh = await bootResult;
+      if (fresh.success) renderFromBootstrap(fresh.data);
+      else Utils.toast(fresh.error || 'Erro ao carregar', 'error');
     }
-    const n = daysUntil(tx.due_date);
-    const rel = relDays(n);
-    // PREVISTA (recorrente) → azul
-    if (isRecurring(tx)) {
-      let tail;
-      if (tx.type === 'income') {
-        tail = rel; // receita não "vence": "em 9 dias" / "hoje" / "há X dias"
-      } else {
-        tail = n < 0 ? 'venceu ' + rel : n === 0 ? 'vence hoje' : 'vence ' + rel;
-      }
-      return `<span class="badge" style="background:#E0E7FF;color:#4338CA;">🔄 Previsto · ${tail}</span>`;
-    }
-    // RECEITA avulsa a receber → azul
-    if (tx.type === 'income') {
-      return `<span class="badge" style="background:#E0E7FF;color:#4338CA;">📥 A receber ${rel}</span>`;
-    }
-    // DESPESA avulsa
-    if (n < 0)  return `<span class="badge b-over">⚠ Venceu ${rel}</span>`;
-    if (n === 0) return `<span class="badge" style="background:var(--red-bg);color:var(--red);">⚠ Vence hoje</span>`;
-    if (n <= 3) return `<span class="badge" style="background:#FEF3C7;color:#B45309;">Vence ${rel}</span>`;
-    return `<span class="badge" style="background:var(--bg-input);color:var(--text-3);">Vence ${rel}</span>`;
   }
+
+  function isRecurring(tx) { return tx.is_recurring==true||tx.is_recurring==='TRUE'||tx._virtual; }
 
   function renderList() {
     const today = new Date().toISOString().split('T')[0];
@@ -462,19 +410,10 @@
     const pending    = f.filter(t => t.status!=='paid' && t.due_date >= today && !isRecurring(t));
     const paid       = f.filter(t => t.status==='paid');
 
-    // Ordenação por vencimento mais próximo (pagas: pagamento mais recente primeiro)
-    const byDueAsc  = (a,b) => String(a.due_date).localeCompare(String(b.due_date));
-    const byPaidDesc = (a,b) => String(b.paid_date||b.due_date).localeCompare(String(a.paid_date||a.due_date));
-    overdue.sort(byDueAsc);
-    lateIncome.sort(byDueAsc);
-    recurring.sort(byDueAsc);
-    pending.sort(byDueAsc);
-    paid.sort(byPaidDesc);
-
     let html='';
     if (overdue.length>0)    html+=`<div class="date-label">⚠ Vencidas</div><div class="tx-list">${overdue.map(renderCard).join('')}</div>`;
     if (lateIncome.length>0) html+=`<div class="date-label">📥 A receber</div><div class="tx-list">${lateIncome.map(renderCard).join('')}</div>`;
-    if (recurring.length>0)  html+=`<div class="date-label">🔄 Previstos</div><div class="tx-list">${recurring.map(renderCard).join('')}</div>`;
+    if (recurring.length>0)  html+=`<div class="date-label">🔄 Recorrentes</div><div class="tx-list">${recurring.map(renderCard).join('')}</div>`;
     if (pending.length>0)    html+=`<div class="date-label">📋 Pendentes</div><div class="tx-list">${pending.map(renderCard).join('')}</div>`;
     if (paid.length>0)       html+=`<div class="date-label">✓ Concluídas</div><div class="tx-list">${paid.map(renderCard).join('')}</div>`;
     document.getElementById('list-container').innerHTML=html;
@@ -484,14 +423,11 @@
     const today = new Date().toISOString().split('T')[0];
     const isOverdue = tx.status!=='paid' && tx.due_date < today && tx.type==='expense';
 
-    // Render especial para faturas
     if (tx._is_invoice) {
       const inv = tx._invoice;
       const card = tx._card;
       const cardColor = card?.color || '#6D28D9';
       const purchaseCount = inv.transactions?.length || inv.purchase_count || 0;
-      const n = daysUntil(tx.due_date);
-      const dueTxt = tx.status==='paid' ? (tx.paid_date?'Paga em '+Utils.formatDate(tx.paid_date):'Paga') : (n<0?'Venceu '+relDays(n):'Vence '+relDays(n));
       const statusLabel = inv.status === 'paid' ? '✓ Paga' : inv.status === 'closed' ? '🔒 Fechada' : '🔓 Aberta';
       const badgeColor = inv.status === 'paid' ? 'var(--green)' : isOverdue ? 'var(--red)' : 'var(--accent-2)';
 
@@ -499,12 +435,12 @@
         <div class="tx-ico" style="background:${cardColor}22;font-size:18px;">💳</div>
         <div class="tx-body">
           <div class="tx-name">${tx.description}</div>
-          <div class="tx-cat">${purchaseCount} compra${purchaseCount!==1?'s':''} · ${dueTxt}</div>
+          <div class="tx-cat">${purchaseCount} compra${purchaseCount!==1?'s':''} · ${isOverdue ? 'Venceu '+Utils.formatDate(tx.due_date) : 'Vence '+Utils.formatDate(tx.due_date)}</div>
           <div><span class="badge" style="background:${badgeColor}22;color:${badgeColor};">${statusLabel}</span></div>
         </div>
-        <div class="tx-right" style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+        <div class="tx-right">
           <div class="tx-amt tx-neg">-${Utils.formatCurrency(tx.expected_amount)}</div>
-          ${inv.status !== 'paid' ? `<button class="pay-btn" onclick="event.stopPropagation();window.location.href='card-detail.html?id=${card?.card_id}'">Pagar</button>` : ''}
+          ${inv.status === 'closed' ? `<button class="pay-btn" onclick="event.stopPropagation();payInvoice('${inv.invoice_id}',${inv.total_amount})">Pagar</button>` : ''}
         </div>
       </div>`;
     }
@@ -513,9 +449,20 @@
     const acc  = accounts.find(a=>a.account_id===tx.account_id);
     const icon = cat?.icon||(tx.type==='income'?'💼':'💰');
     const sub  = [cat?.name+(cat?.subcategory?' · '+cat.subcategory:''), acc?.name].filter(Boolean).join(' · ');
+    const virtualTag = tx._virtual ? '<span class="badge" style="background:var(--accent-light);color:var(--accent-2);margin-left:4px;">🔄 Fixo</span>' : '';
     const pastTag = tx._overdue_from_past ? `<span class="badge" style="background:#FEF3C7;color:#92400E;margin-left:4px;">📅 ${Utils.formatMonth(String(tx.due_date).slice(0,7))}</span>` : '';
+    const instTag = tx.installment_number ? `<span class="badge" style="background:#FEF3C7;color:#92400E;margin-left:4px;">📌 ${tx.installment_number}ª parc.</span>` : '';
 
-    const badge = chipHtml(tx);
+    let badge='';
+    if (tx.status==='paid') {
+      badge = `<span class="badge b-paid">${tx.type==='income'?'✓ Recebido':'✓ Pago'}</span>`;
+    } else if (isOverdue) {
+      badge = `<span class="badge b-over">⚠ Venceu ${Utils.formatDate(tx.due_date)}</span>`;
+    } else if (tx.type==='income' && tx.due_date < today) {
+      badge = `<span class="badge b-pend">📥 Previsto ${Utils.formatDate(tx.due_date)}</span>`;
+    } else {
+      badge = `<span class="badge b-pend">${tx.type==='income'?'Previsto':'Vence'} ${Utils.formatDate(tx.due_date)}</span>`;
+    }
 
     let amtHtml='';
     if (tx.status==='paid'&&tx.actual_amount&&Math.abs(Number(tx.actual_amount)-Number(tx.expected_amount))>0.01) {
@@ -551,9 +498,9 @@
       <div class="tx-body">
         <div class="tx-name">${tx.description}</div>
         <div class="tx-cat">${sub}</div>
-        <div>${badge}${pastTag}</div>
+        <div>${badge}${virtualTag}${pastTag}${instTag}</div>
       </div>
-      <div class="tx-right" style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">${amtHtml}${payBtn}</div>
+      <div class="tx-right">${amtHtml}${payBtn}</div>
     </div>`;
   }
 
@@ -563,7 +510,7 @@
       paid_date: new Date().toISOString().split('T')[0],
       paid_amount: amount
     });
-    if (res.success) { Utils.toast('✅ Fatura paga!'); load(); }
+    if (res.success) { Utils.toast('✅ Fatura paga!'); API.invalidateCache(); load(); }
     else Utils.toast(res.error||'Erro','error');
   }
 
@@ -636,7 +583,7 @@
       notes: document.getElementById('edit-notes').value
     });
     btn.disabled=false; btn.textContent='Salvar Alterações';
-    if (res.success) { Utils.toast('✅ Atualizado!'); closeEditModal(); load(); }
+    if (res.success) { Utils.toast('✅ Atualizado!'); closeEditModal(); API.invalidateCache(); load(); }
     else Utils.toast(res.error||'Erro','error');
   }
 
@@ -653,10 +600,15 @@
   async function confirmDelete() {
     if (!txToDelete) return;
     const btn=document.getElementById('confirm-delete-btn'); btn.disabled=true; btn.textContent='Excluindo...';
-    const res = await API.call('transactions.delete', {transaction_id: txToDelete.transaction_id});
+    // Update otimista: remove da UI imediatamente
+    const txId = txToDelete.transaction_id;
+    allTx = allTx.filter(t => t.transaction_id !== txId);
+    renderList();
+    closeConfirmDelete();
+    const res = await API.call('transactions.delete', {transaction_id: txId});
     btn.disabled=false; btn.textContent='Excluir';
-    if (res.success) { Utils.toast('✅ Excluído!'); closeConfirmDelete(); load(); }
-    else Utils.toast(res.error||'Erro','error');
+    if (res.success) { Utils.toast('✅ Excluído!'); API.invalidateCache(); load(); }
+    else { Utils.toast(res.error||'Erro','error'); load(); }
   }
 
   async function payVirtual(recId, dueDate, type, desc, amount, catId) {
@@ -667,7 +619,7 @@
     const realDueDate=`${currentMonth}-${day}`;
     const res=await API.createTransaction({type,description:desc,expected_amount:amount,due_date:realDueDate,category_id:catId,account_id:'',is_recurring:true,recurring_id:recId,status:'pending'});
     btn.disabled=false; btn.textContent=type==='income'?'Confirmar':'Pagar';
-    if (res.success) { await load(); openPayModal(res.data.transaction_id,'',amount,type,desc,realDueDate); }
+    if (res.success) { API.invalidateCache(); await load(); openPayModal(res.data.transaction_id,'',amount,type,desc,realDueDate); }
     else Utils.toast(res.error||'Erro','error');
   }
 
@@ -714,10 +666,15 @@
     const amount=parseCurrency(document.getElementById('pay-amount').value);
     if (!date||!amount) { Utils.toast('Preencha data e valor','error'); return; }
     const btn=document.getElementById('pay-save-btn'); btn.disabled=true; btn.textContent='Confirmando...';
+    // Update otimista: marca como paga na UI
+    const tx = allTx.find(t => t.transaction_id === txId);
+    if (tx) { tx.status = 'paid'; tx.actual_amount = amount; tx.paid_date = date; if (accountId) tx.account_id = accountId; }
+    renderList();
+    closePayModal();
     const res=await API.markPaid({transaction_id:txId,account_id:accountId,paid_date:date,actual_amount:amount});
     btn.disabled=false; btn.textContent='✅ Confirmar';
-    if (res.success) { Utils.toast('✅ Confirmado!'); closePayModal(); load(); }
-    else Utils.toast(res.error||'Erro','error');
+    if (res.success) { Utils.toast('✅ Confirmado!'); API.invalidateCache(); load(); }
+    else { Utils.toast(res.error||'Erro','error'); load(); }
   }
 
   function toggleAlreadyDone() {
@@ -770,7 +727,7 @@
       await API.markPaid({transaction_id:res.data.transaction_id,account_id:document.getElementById('tx-account').value,paid_date:dueDate,actual_amount:actualAmount});
     }
     btn.disabled=false; btn.textContent='Salvar';
-    Utils.toast('✅ Salvo!'); closeTxModal(); load();
+    Utils.toast('✅ Salvo!'); closeTxModal(); API.invalidateCache(); load();
   }
 
   function openCardModal() {
@@ -808,7 +765,7 @@
     const installments=parseInt(document.getElementById('cm-installments').value)||1;
     if (!desc||!amount||!date||!cardId) { Utils.toast('Preencha todos os campos obrigatórios','error'); return; }
     const btn=document.getElementById('cm-save-btn'); btn.disabled=true; btn.textContent='Salvando...';
-
+    
     let res;
     if (installments > 1) {
       res = await API.call('invoices.createInstallment', {
@@ -825,13 +782,14 @@
         await API.markPaid({transaction_id:res.data.transaction_id,paid_date:date,actual_amount:amount});
       }
     }
-
+    
     btn.disabled=false; btn.textContent='Registrar Compra';
-    if (res.success) {
+    if (res.success) { 
       const msg = installments > 1 ? `✅ ${installments} parcelas criadas!` : '✅ Compra registrada!';
-      Utils.toast(msg);
-      closeCardModal();
-      load();
+      Utils.toast(msg); 
+      closeCardModal(); 
+      API.invalidateCache();
+      load(); 
     } else Utils.toast(res.error||'Erro','error');
   }
 
@@ -864,7 +822,7 @@
         API.markPaid({transaction_id:r1.data.transaction_id,account_id:fromId,paid_date:date,actual_amount:amount}),
         API.markPaid({transaction_id:r2.data.transaction_id,account_id:toId,paid_date:date,actual_amount:amount})
       ]);
-      Utils.toast('✅ Transferência realizada!'); closeTransferModal(); ['tr-amount','tr-notes'].forEach(id=>document.getElementById(id).value=''); load();
+      Utils.toast('✅ Transferência realizada!'); closeTransferModal(); ['tr-amount','tr-notes'].forEach(id=>document.getElementById(id).value=''); API.invalidateCache(); load();
     } else Utils.toast('Erro ao transferir','error');
   }
 
@@ -885,7 +843,7 @@
     const btn=document.getElementById('rec-save-btn'); btn.disabled=true; btn.textContent='Salvando...';
     const res=await API.createRecurrence({description:desc,type:recType,expected_amount:amount,recurrence_day:day,category_id:document.getElementById('rec-category').value,account_id:'',start_date:new Date().toISOString().split('T')[0]});
     btn.disabled=false; btn.textContent='Salvar Recorrência';
-    if (res.success) { await API.generateMonth(Utils.currentMonth()); Utils.toast('✅ Recorrência salva!'); closeRecurrenceModal(); ['rec-desc','rec-amount','rec-day'].forEach(id=>document.getElementById(id).value=''); load(); }
+    if (res.success) { await API.generateMonth(Utils.currentMonth()); Utils.toast('✅ Recorrência salva!'); closeRecurrenceModal(); ['rec-desc','rec-amount','rec-day'].forEach(id=>document.getElementById(id).value=''); API.invalidateCache(); load(); }
     else Utils.toast(res.error||'Erro','error');
   }
 
@@ -939,6 +897,7 @@
       ['d-desc','d-original','d-total','d-install','d-last-paid'].forEach(id=>document.getElementById(id).value='');
       document.getElementById('debt-preview').style.display='none';
       document.getElementById('retroactive-section').style.display='none';
+      API.invalidateCache();
       load();
     } else Utils.toast(res.error||'Erro','error');
   }
