@@ -13,6 +13,62 @@ const API = {
       return { success: false, error: 'Erro de conexão. Verifique sua internet.' };
     }
   },
+
+  /**
+   * Bootstrap: retorna TUDO (accounts, cards, categories, recurrences,
+   * invoices, transactions do mês, vencidas, summary) numa única chamada.
+   * 
+   * Uso com cache:
+   *   API.bootstrap(month)          → sempre busca do backend
+   *   API.bootstrap(month, true)    → retorna cache instantâneo se existir,
+   *                                    e atualiza em background (stale-while-revalidate)
+   */
+  bootstrap(month, useCache = false) {
+    const m = month || new Date().toISOString().slice(0, 7);
+    const cacheKey = `fp_bootstrap_${m}`;
+
+    if (useCache) {
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          // Retorna cache imediato + promise de atualização em background
+          const bgUpdate = API.call('bootstrap.load', { month: m }).then(fresh => {
+            if (fresh.success) {
+              localStorage.setItem(cacheKey, JSON.stringify(fresh));
+            }
+            return fresh;
+          });
+          return { cached: parsed, fresh: bgUpdate };
+        } catch (e) {
+          // Cache corrompido, ignora
+        }
+      }
+    }
+
+    // Sem cache disponível ou não solicitado — busca do backend
+    return API.call('bootstrap.load', { month: m }).then(res => {
+      if (res.success) {
+        try { localStorage.setItem(cacheKey, JSON.stringify(res)); } catch (e) {}
+      }
+      return res;
+    });
+  },
+
+  /**
+   * Invalida o cache do bootstrap. Chamar após mutações (create/update/delete).
+   */
+  invalidateCache(month) {
+    if (month) {
+      localStorage.removeItem(`fp_bootstrap_${month}`);
+    } else {
+      // Remove todos os caches de bootstrap
+      Object.keys(localStorage).forEach(k => {
+        if (k.startsWith('fp_bootstrap_')) localStorage.removeItem(k);
+      });
+    }
+  },
+
   login: (email, password) => API.call('auth.login', { email, password }),
   requestReset: (email) => API.call('auth.requestReset', { email }),
   resetPassword: (email, code, newPassword) => API.call('auth.resetPassword', { email, code, newPassword }),
@@ -47,8 +103,12 @@ const Auth = {
     localStorage.setItem('fp_user', JSON.stringify(user));
   },
   logout() {
-    localStorage.removeItem('fp_token');
-    localStorage.removeItem('fp_user');
+    // Limpa todos os caches ao fazer logout
+    Object.keys(localStorage).forEach(k => {
+      if (k.startsWith('fp_bootstrap_') || k === 'fp_token' || k === 'fp_user') {
+        localStorage.removeItem(k);
+      }
+    });
     window.location.href = '/index.html';
   },
   requireAuth() {
