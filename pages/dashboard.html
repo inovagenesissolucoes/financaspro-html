@@ -4,21 +4,19 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>FinançasPRO — Dashboard</title>
-  <!-- ===== PWA (colar dentro do <head> de CADA página: index.html, recover.html e tudo em /pages) ===== -->
-<link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#7C3AED">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="FinançasPRO">
-<link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', function () {
-      navigator.serviceWorker.register('/sw.js').catch(function(){});
-    });
-  }
-</script>
-<!-- ===== fim PWA ===== -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#7C3AED">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="FinançasPRO">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('/sw.js').catch(function(){});
+      });
+    }
+  </script>
   <link rel="stylesheet" href="../css/style.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
 </head>
@@ -105,9 +103,95 @@
     const res = await API.generateMonth(Utils.currentMonth());
     if (res.success) {
       const count = res.data?.count || 0;
-      if (count > 0) Utils.toast(`🔄 ${count} recorrência(s) gerada(s)!`);
+      if (count > 0) {
+        Utils.toast(`🔄 ${count} recorrência(s) gerada(s)!`);
+        API.invalidateCache(); // ← invalida cache pra recarregar as novas
+      }
     }
     localStorage.setItem(key, '1');
+  }
+
+  function renderFromBootstrap(bootData) {
+    const s = bootData.summary;
+    if (!s) return;
+
+    document.getElementById('total-balance').textContent   = Utils.formatCurrency(s.total_balance);
+    document.getElementById('income-pending').textContent  = Utils.formatCurrency(s.income.pending);
+    document.getElementById('expense-pending').textContent = Utils.formatCurrency(s.expense.pending);
+    document.getElementById('commitment-rate').textContent = s.commitment_rate + '%';
+    document.getElementById('income-paid').textContent     = Utils.formatCurrency(s.income.paid);
+    document.getElementById('expense-paid').textContent    = Utils.formatCurrency(s.expense.paid);
+
+    // Saldo previsto = Recebido - (A pagar + Pago)
+    const saldoPrevisto = s.income.paid - (s.expense.pending + s.expense.paid);
+    document.getElementById('net-balance').textContent = Utils.formatCurrency(saldoPrevisto);
+    document.getElementById('overdue-count').textContent = s.overdue_count + (s.overdue_count===1?' conta':' contas');
+
+    if (s.overdue_count > 0) {
+      document.getElementById('overdue-alert').innerHTML = `
+        <div class="alert-banner alert-danger">
+          <span class="alert-icon">🚨</span>
+          <div>
+            <div class="alert-title">${s.overdue_count} conta${s.overdue_count>1?'s':''} vencida${s.overdue_count>1?'s':''}</div>
+            <div class="alert-sub">${Utils.formatCurrency(s.overdue_amount)} em atraso</div>
+          </div>
+        </div>`;
+    } else {
+      document.getElementById('overdue-alert').innerHTML = '';
+    }
+
+    // Contas
+    if (s.accounts?.length > 0) {
+      document.getElementById('accounts-list').innerHTML = s.accounts.map((a) => {
+        const color = a.color || '#6366F1';
+        return `
+        <div class="acc-card" style="background:linear-gradient(135deg, ${color}, ${shadeColor(color,-22)});">
+          <div class="acc-emoji">🏦</div>
+          <div class="acc-name">${a.name}</div>
+          <div class="acc-type">${typeLabel[a.type]||'Conta'}</div>
+          <div class="acc-bal">${Utils.formatCurrency(a.current_balance)}</div>
+        </div>`;
+      }).join('');
+    } else {
+      document.getElementById('accounts-list').innerHTML = '<p style="font-size:12px;color:var(--text-3);padding:8px 0;">Nenhuma conta. <a href="settings.html" style="color:var(--accent-2);">Cadastrar →</a></p>';
+    }
+
+    // Maiores gastos por categoria (calcula em cima das transactions do bootstrap)
+    const monthTx = (bootData.transactions || []).filter(t => t.type === 'expense' && t.status !== 'cancelled');
+    const cats = bootData.categories || [];
+    const breakdown = {};
+    monthTx.forEach(t => {
+      const catId = t.category_id || 'uncategorized';
+      const cat = cats.find(c => c.category_id === catId);
+      const catName = cat?.name || 'Outros';
+      if (!breakdown[catName]) breakdown[catName] = {
+        name: catName,
+        total: 0,
+        count: 0,
+        color: cat?.color || '#94A3B8',
+        icon: cat?.icon || '💰'
+      };
+      breakdown[catName].total += Number(t.expected_amount || 0);
+      breakdown[catName].count++;
+    });
+    const sortedCats = Object.values(breakdown).sort((a, b) => b.total - a.total);
+
+    if (sortedCats.length > 0) {
+      const max = sortedCats[0].total || 1;
+      document.getElementById('cat-list').innerHTML = sortedCats.slice(0,5).map((c,i) => `
+        <div class="cat-row">
+          <div class="cat-icon" style="background:${c.color||COLORS[i%COLORS.length]}22;">${c.icon||'💰'}</div>
+          <div class="cat-body">
+            <div class="cat-top">
+              <span class="cat-name">${c.name}</span>
+              <span class="cat-amt" style="color:${c.color||COLORS[i%COLORS.length]}">${Utils.formatCurrency(c.total)}</span>
+            </div>
+            <div class="bar-track"><div class="bar-fill" style="width:${Math.round((c.total/max)*100)}%;background:${c.color||COLORS[i%COLORS.length]};"></div></div>
+          </div>
+        </div>`).join('');
+    } else {
+      document.getElementById('cat-list').innerHTML = '<p style="font-size:12px;color:var(--text-3);">Sem lançamentos este mês.</p>';
+    }
   }
 
   async function load() {
@@ -120,72 +204,20 @@
 
       autoGenerateRecurrences();
 
-      const [sumRes, catRes] = await Promise.all([
-        API.getDashboard(currentMonth),
-        API.getCategoryBreakdown(currentMonth)
-      ]);
+      // Bootstrap com cache stale-while-revalidate
+      const bootResult = API.bootstrap(currentMonth, true);
 
-      if (!sumRes.success) return;
-      const s = sumRes.data;
-
-      document.getElementById('total-balance').textContent   = Utils.formatCurrency(s.total_balance);
-      document.getElementById('income-pending').textContent  = Utils.formatCurrency(s.income.pending);
-      document.getElementById('expense-pending').textContent = Utils.formatCurrency(s.expense.pending);
-      document.getElementById('commitment-rate').textContent = s.commitment_rate + '%';
-      document.getElementById('income-paid').textContent     = Utils.formatCurrency(s.income.paid);
-      document.getElementById('expense-paid').textContent    = Utils.formatCurrency(s.expense.paid);
-
-      // Saldo previsto = Recebido - (A pagar + Pago)
-      const saldoPrevisto = s.income.paid - (s.expense.pending + s.expense.paid);
-      document.getElementById('net-balance').textContent = Utils.formatCurrency(saldoPrevisto);
-      document.getElementById('overdue-count').textContent = s.overdue_count + (s.overdue_count===1?' conta':' contas');
-
-      if (s.overdue_count > 0) {
-        document.getElementById('overdue-alert').innerHTML = `
-          <div class="alert-banner alert-danger">
-            <span class="alert-icon">🚨</span>
-            <div>
-              <div class="alert-title">${s.overdue_count} conta${s.overdue_count>1?'s':''} vencida${s.overdue_count>1?'s':''}</div>
-              <div class="alert-sub">${Utils.formatCurrency(s.overdue_amount)} em atraso</div>
-            </div>
-          </div>`;
+      if (bootResult.cached && bootResult.cached.success) {
+        // Renderiza JÁ com cache (instantâneo)
+        renderFromBootstrap(bootResult.cached.data);
+        // Atualiza em background
+        const fresh = await bootResult.fresh;
+        if (fresh.success) renderFromBootstrap(fresh.data);
       } else {
-        document.getElementById('overdue-alert').innerHTML = '';
+        // Sem cache, aguarda backend
+        const fresh = await bootResult;
+        if (fresh.success) renderFromBootstrap(fresh.data);
       }
-
-      if (s.accounts?.length > 0) {
-        document.getElementById('accounts-list').innerHTML = s.accounts.map((a) => {
-          const color = a.color || '#6366F1';
-          return `
-          <div class="acc-card" style="background:linear-gradient(135deg, ${color}, ${shadeColor(color,-22)});">
-            <div class="acc-emoji">🏦</div>
-            <div class="acc-name">${a.name}</div>
-            <div class="acc-type">${typeLabel[a.type]||'Conta'}</div>
-            <div class="acc-bal">${Utils.formatCurrency(a.current_balance)}</div>
-          </div>`;
-        }).join('');
-      } else {
-        document.getElementById('accounts-list').innerHTML = '<p style="font-size:12px;color:var(--text-3);padding:8px 0;">Nenhuma conta. <a href="settings.html" style="color:var(--accent-2);">Cadastrar →</a></p>';
-      }
-
-      const cats = catRes.success ? catRes.data : [];
-      if (cats.length > 0) {
-        const max = cats[0].total || 1;
-        document.getElementById('cat-list').innerHTML = cats.slice(0,5).map((c,i) => `
-          <div class="cat-row">
-            <div class="cat-icon" style="background:${c.color||COLORS[i%COLORS.length]}22;">${c.icon||'💰'}</div>
-            <div class="cat-body">
-              <div class="cat-top">
-                <span class="cat-name">${c.name}</span>
-                <span class="cat-amt" style="color:${c.color||COLORS[i%COLORS.length]}">${Utils.formatCurrency(c.total)}</span>
-              </div>
-              <div class="bar-track"><div class="bar-fill" style="width:${Math.round((c.total/max)*100)}%;background:${c.color||COLORS[i%COLORS.length]};"></div></div>
-            </div>
-          </div>`).join('');
-      } else {
-        document.getElementById('cat-list').innerHTML = '<p style="font-size:12px;color:var(--text-3);">Sem lançamentos este mês.</p>';
-      }
-
     } catch(e) {
       console.error('ERRO no load:', e);
     }
